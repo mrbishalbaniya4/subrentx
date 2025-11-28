@@ -93,6 +93,13 @@ service cloud.firestore {
     }
 
     /**
+     * (UPDATE) Ensures the 'createdAt' timestamp of an Item document cannot be changed.
+     */
+    function isItemCreationTimestampImmutable() {
+      return request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    /**
      * (CREATE) Validates that a new ActivityLog document has the correct owner ID.
      */
     function hasValidLogData(userId) {
@@ -128,7 +135,7 @@ service cloud.firestore {
         allow get: if isOwner(userId);
         allow list: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidItemData(userId);
-        allow update: if isExistingOwner(userId) && isItemUserIdImmutable();
+        allow update: if isExistingOwner(userId) && isItemUserIdImmutable() && isItemCreationTimestampImmutable();
         allow delete: if isExistingOwner(userId);
       }
 

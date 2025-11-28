@@ -91,19 +91,24 @@ export async function editItem(
   firestore: Firestore,
   userId: string,
   itemData: Omit<Item, 'createdAt' | 'updatedAt'> & {
-    createdAt?: Timestamp;
+    createdAt?: Timestamp | FieldValue;
   }
 ): Promise<void> {
   const { id: itemId, ...dataToUpdate } = itemData;
   const itemRef = doc(firestore, `users/${userId}/items/${itemId}`);
 
-  const originalDoc = await getDoc(itemRef);
-  const originalItem = originalDoc.data() as Item | undefined;
+  const originalDocSnap = await getDoc(itemRef);
+    if (!originalDocSnap.exists()) {
+        throw new Error("Document not found");
+    }
+  const originalItem = originalDocSnap.data() as Item;
 
-  // Ensure userId is part of the update payload to satisfy security rules
+  // Explicitly preserve the original `createdAt` timestamp.
+  // Merge the incoming data with a payload that ensures immutable fields are respected.
   const dataToSave = {
     ...dataToUpdate,
-    userId: userId, // Keep the userId to ensure immutability rule passes
+    userId: originalItem.userId, // Enforce immutability from original doc
+    createdAt: originalItem.createdAt, // Enforce immutability from original doc
     updatedAt: serverTimestamp(),
   };
 
