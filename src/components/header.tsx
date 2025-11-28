@@ -108,16 +108,13 @@ export function Header({
         <ThemeToggle />
       </div>
 
-       <div className="fixed bottom-4 right-4 z-40">
+       <div className="fixed bottom-4 right-4 z-40 flex flex-col items-center gap-3">
          {user && <AddItemButton />}
-       </div>
-       <div className="fixed bottom-20 right-4 z-40 md:hidden">
-         <UserNav />
-       </div>
-       <div className="fixed bottom-36 right-4 z-40 md:hidden">
-         <ThemeToggle />
+         <div className="flex gap-3 md:hidden">
+            <UserNav />
+            <ThemeToggle />
+         </div>
       </div>
-
     </header>
   );
 }
