@@ -88,7 +88,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const firestore = useFirestore();
   const { user } = useUser();
 
   const form = useForm<ItemFormValues>({
@@ -122,7 +121,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
 
   const onSubmit = (values: ItemFormValues) => {
-    if (!firestore || !user) {
+    if (!user) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -140,7 +139,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
             startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
             endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
           };
-          await editItem(firestore, user.uid, itemDataToUpdate);
+          await editItem(user.uid, itemDataToUpdate);
           toast({ title: 'Success', description: 'Item updated successfully.' });
         } else {
            const itemDataToCreate = {
@@ -148,7 +147,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
             startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
             endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
           };
-          await createItem(firestore, user.uid, itemDataToCreate);
+          await createItem(user.uid, itemDataToCreate);
           toast({ title: 'Success', description: 'Item added successfully.' });
         }
         setDialogOpen(false);
@@ -319,7 +318,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                         </div>
                     </div>
                      <div className="space-y-1 pt-1">
-                        <Progress value={passwordStrength * 20} className={`h-2 [&>*]:bg-green-600 ${strengthColors[passwordStrength]}`} />
+                        <Progress value={passwordStrength * 20} className="h-2" />
                         <p className="text-xs font-medium text-muted-foreground">
                             {strengthLabels[passwordStrength]}
                         </p>
@@ -427,5 +426,3 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
     </Form>
   );
 }
-
-    

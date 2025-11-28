@@ -12,7 +12,10 @@ import {
   serverTimestamp,
   Timestamp,
   getDoc,
+  deleteDoc,
 } from 'firebase/firestore';
+import { auth } from 'firebase-admin';
+import {getApp, getApps, initializeApp} from 'firebase-admin/app';
 
 // This is a new type that represents the data coming from the form,
 // where dates are still strings.
@@ -21,30 +24,61 @@ type ItemFormData = Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'st
   endDate?: string;
 };
 
+// Initialize Firebase Admin SDK
+const app = getApps().length
+  ? getApp()
+  : initializeApp();
+
+const db = getFirestore(app);
+
+async function getCurrentUserId(): Promise<string> {
+  // This is a placeholder for getting the current user's ID
+  // In a real app, you'd get this from the session or auth state.
+  // For now, we'll assume a hardcoded user for demonstration.
+  // In a real Next.js app with auth, you might use:
+  // const session = await getSession();
+  // if (!session?.user?.id) throw new Error('Not authenticated');
+  // return session.user.id;
+  
+  // This part needs a proper implementation based on your auth setup
+  // For now, let's throw an error if no user is found.
+  // We'll modify the client to provide the userId.
+  const user = await auth().verifyIdToken(
+    // A placeholder token is used here, this would be the user's actual ID token in a real app
+    'placeholder-token'
+  ).catch(() => null);
+
+  //This is a temporary solution and will be replaced with a proper auth check
+  return 'anonymous-user';
+}
+
 async function logActivity(
-  db: ReturnType<typeof getFirestore>,
   userId: string,
   itemId: string,
   itemName: string,
   action: string,
   details?: string
 ) {
-  const logCollection = collection(db, 'users', userId, 'activity-logs');
-  await addDoc(logCollection, {
-    userId,
-    itemId,
-    itemName,
-    action,
-    details,
-    timestamp: serverTimestamp(),
-  });
+  try {
+    const logCollection = collection(db, 'users', userId, 'activity-logs');
+    await addDoc(logCollection, {
+      userId,
+      itemId,
+      itemName,
+      action,
+      details,
+      timestamp: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Failed to log activity:", error);
+    // Decide if you want to throw the error or just log it
+  }
 }
 
-export async function createItem(
-  db: ReturnType<typeof getFirestore>,
-  userId: string,
-  itemData: ItemFormData
-): Promise<Item> {
+export async function createItem(userId: string, itemData: ItemFormData): Promise<Item> {
+  if (!userId) {
+    throw new Error('User not authenticated');
+  }
   const itemsCollection = collection(db, 'users', userId, 'items');
 
   const dataToSave = {
@@ -57,11 +91,9 @@ export async function createItem(
 
   const newItemRef = await addDoc(itemsCollection, dataToSave);
   
-  await logActivity(db, userId, newItemRef.id, itemData.name, 'created', 'Item created');
+  await logActivity(userId, newItemRef.id, itemData.name, 'created', 'Item created');
 
   const now = Timestamp.now();
-  // We can't just spread dataToSave because createdAt/updatedAt are server values.
-  // We return an optimistic response with client-generated timestamps.
   return { 
     ...(itemData as any),
     id: newItemRef.id,
@@ -73,18 +105,18 @@ export async function createItem(
 }
 
 export async function editItem(
-  db: ReturnType<typeof getFirestore>,
   userId: string,
   itemData: Omit<Item, 'createdAt' | 'updatedAt'> & { createdAt?: Timestamp | Date }
 ): Promise<Item> {
+   if (!userId) {
+    throw new Error('User not authenticated');
+  }
   const { id: itemId, ...dataToUpdate } = itemData;
   const itemRef = doc(db, 'users', userId, 'items', itemId);
 
-  // Fetch the original item to compare password
   const originalDoc = await getDoc(itemRef);
   const originalItem = originalDoc.data() as Item | undefined;
   
-  // Ensure we don't try to write the id field back to the document
   const dataToSave = {
     ...dataToUpdate,
     updatedAt: serverTimestamp(),
@@ -93,21 +125,19 @@ export async function editItem(
   await updateDoc(itemRef, dataToSave as any);
 
   if (originalItem && originalItem.password !== itemData.password) {
-    await logActivity(db, userId, itemId, itemData.name, 'password_changed', 'Password was changed');
+    await logActivity(userId, itemId, itemData.name, 'password_changed', 'Password was changed');
   } else {
-    await logActivity(db, userId, itemId, itemData.name, 'updated', 'Item details updated');
+    await logActivity(userId, itemId, itemData.name, 'updated', 'Item details updated');
   }
 
   const now = Timestamp.now();
   
   let finalCreatedAt: Timestamp;
-
   if (itemData.createdAt instanceof Timestamp) {
     finalCreatedAt = itemData.createdAt;
   } else if (itemData.createdAt instanceof Date) {
     finalCreatedAt = Timestamp.fromDate(itemData.createdAt);
   } else {
-    // This case should ideally not happen if data is consistent
     finalCreatedAt = now;
   }
 
@@ -118,11 +148,10 @@ export async function editItem(
   } as Item;
 }
 
-export async function duplicateItem(
-  db: ReturnType<typeof getFirestore>,
-  userId: string,
-  itemId: string
-): Promise<Item> {
+export async function duplicateItem(userId: string, itemId: string): Promise<Item> {
+  if (!userId) {
+    throw new Error('User not authenticated');
+  }
   const itemRef = doc(db, 'users', userId, 'items', itemId);
   const docSnap = await getDoc(itemRef);
 
@@ -152,11 +181,10 @@ export async function duplicateItem(
   };
 }
 
-export async function archiveItem(
-  db: ReturnType<typeof getFirestore>,
-  userId: string,
-  itemId: string
-) {
+export async function archiveItem(userId: string, itemId: string) {
+  if (!userId) {
+    throw new Error('User not authenticated');
+  }
   const itemRef = doc(db, 'users', userId, 'items', itemId);
   const docSnap = await getDoc(itemRef);
 
@@ -171,10 +199,11 @@ export async function archiveItem(
     updatedAt: serverTimestamp(),
   });
   
-  await logActivity(db, userId, itemId, item.name, 'archived', 'Item was archived');
+  await logActivity(userId, itemId, item.name, 'archived', 'Item was archived');
 
   return { success: true };
 }
+
 
 export async function suggestDateAction(itemDescription: string): Promise<{
   suggestedDate?: string;

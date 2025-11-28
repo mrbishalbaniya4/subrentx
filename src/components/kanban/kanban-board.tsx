@@ -29,7 +29,6 @@ const columns: { id: Status; title: string }[] = [
 export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
   const [activeItem, setActiveItem] = useState<Item | null>(null);
   const { toast } = useToast();
-  const firestore = useFirestore();
   const { user } = useUser();
   const [items, setItems] = useState(initialItems);
 
@@ -109,7 +108,7 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
     setActiveItem(null);
     const { active, over } = event;
 
-    if (!over || !firestore || !user) {
+    if (!over || !user) {
       // If drag is cancelled or conditions aren't met, revert to server state.
       setItems(initialItems);
       return;
@@ -143,7 +142,7 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
             updatedItem.archivedAt = new Date().toISOString();
           }
           // Fire-and-forget the update. The real-time listener will handle the UI update.
-          editItem(firestore, user.uid, updatedItem);
+          editItem(user.uid, updatedItem);
       } catch (error) {
           // On failure, the real-time listener will eventually revert the state,
           // but we can also show an immediate toast.

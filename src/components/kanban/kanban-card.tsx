@@ -74,7 +74,6 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-  const firestore = useFirestore();
   const { user } = useUser();
   const [isClient, setIsClient] = useState(false);
 
@@ -116,10 +115,10 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
 
 
   const handleArchive = () => {
-    if (!firestore || !user) return;
+    if (!user) return;
     startTransition(async () => {
       try {
-        await archiveItem(firestore, user.uid, item.id);
+        await archiveItem(user.uid, item.id);
         toast({
           title: 'Success',
           description: 'Item moved to Archived.',
@@ -136,10 +135,10 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
   };
 
   const handleDuplicate = () => {
-    if (!firestore || !user) return;
+    if (!user) return;
     startTransition(async () => {
       try {
-        await duplicateItem(firestore, user.uid, item.id);
+        await duplicateItem(user.uid, item.id);
         toast({
           title: 'Success',
           description: 'Item duplicated successfully.',
