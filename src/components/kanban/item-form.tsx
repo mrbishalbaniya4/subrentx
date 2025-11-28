@@ -64,6 +64,23 @@ const getPasswordStrength = (password: string) => {
     return Math.min(score, 5); // Max score of 5
 };
 
+const strengthColors = [
+    'bg-gray-200', // 0
+    'bg-red-500',   // 1
+    'bg-orange-500',// 2
+    'bg-yellow-500',// 3
+    'bg-green-400', // 4
+    'bg-green-600', // 5
+];
+
+const strengthLabels = [
+    'Empty',
+    'Very Weak',
+    'Weak',
+    'Fair',
+    'Good',
+    'Strong',
+];
 
 export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
   const { toast } = useToast();
@@ -103,24 +120,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
 
   const password = form.watch('password') || '';
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
-
-  const strengthColors = [
-    'bg-gray-200', // 0
-    'bg-red-500',   // 1
-    'bg-orange-500',// 2
-    'bg-yellow-500',// 3
-    'bg-green-400', // 4
-    'bg-green-600', // 5
-  ];
-
-  const strengthLabels = [
-    'Empty',
-    'Very Weak',
-    'Weak',
-    'Fair',
-    'Good',
-    'Strong',
-  ];
 
   const onSubmit = (values: ItemFormValues) => {
     if (!firestore || !user) {
@@ -320,8 +319,8 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                         </div>
                     </div>
                      <div className="space-y-1 pt-1">
-                        <Progress value={passwordStrength * 20} className="h-2" />
-                        <p className="text-xs font-medium" style={{ color: strengthColors[passwordStrength].replace('bg-', '').replace('-500', '') }}>
+                        <Progress value={passwordStrength * 20} className={`h-2 [&>*]:bg-green-600 ${strengthColors[passwordStrength]}`} />
+                        <p className="text-xs font-medium text-muted-foreground">
                             {strengthLabels[passwordStrength]}
                         </p>
                     </div>
@@ -428,3 +427,5 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
     </Form>
   );
 }
+
+    
