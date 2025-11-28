@@ -51,20 +51,16 @@ import { useFirestore, useUser } from '@/firebase';
 interface KanbanCardProps {
   item: Item;
   isOverlay?: boolean;
+  isDragDisabled?: boolean;
 }
 
-export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
+export function KanbanCard({ item, isOverlay, isDragDisabled }: KanbanCardProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-  const [isClient, setIsClient] = useState(false);
   const firestore = useFirestore();
   const { user } = useUser();
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const {
     setNodeRef,
@@ -79,7 +75,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
       type: 'item',
       item,
     },
-    disabled: !isClient,
+    disabled: isDragDisabled,
   });
 
   const style = {
@@ -138,7 +134,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
           isDragging && 'opacity-50',
           isOverlay && 'shadow-2xl'
         )}
-        {...(isClient ? attributes : {})}
+        {...(!isDragDisabled ? attributes : {})}
       >
         <CardHeader className="relative flex-row items-start gap-4 space-y-0 p-4">
           <div
@@ -150,12 +146,12 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
           >
             <CardTitle className="text-lg font-headline">{item.name}</CardTitle>
           </div>
-          {isClient && (
+          {!isDragDisabled && (
             <div
               {...listeners}
               className={cn(
                 'cursor-grab p-1 text-muted-foreground transition-opacity hover:opacity-80 group-hover:opacity-100 md:opacity-0',
-                !isClient && 'cursor-not-allowed'
+                isDragDisabled && 'cursor-not-allowed'
               )}
             >
               <GripVertical className="h-5 w-5" />
