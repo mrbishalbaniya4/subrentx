@@ -5,52 +5,29 @@ import { generatePassword } from '@/ai/flows/generate-password-flow';
 import type { Item } from '@/lib/types';
 import {
   getFirestore,
-  collection,
-  addDoc,
-  updateDoc,
-  doc,
-  serverTimestamp,
+  FieldValue,
   Timestamp,
-  getDoc,
-  deleteDoc,
-} from 'firebase/firestore';
+} from 'firebase-admin/firestore';
 import { auth } from 'firebase-admin';
-import {getApp, getApps, initializeApp} from 'firebase-admin/app';
+import { getApp, getApps, initializeApp } from 'firebase-admin/app';
 
 // This is a new type that represents the data coming from the form,
 // where dates are still strings.
-type ItemFormData = Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'status'> & {
+type ItemFormData = Omit<
+  Item,
+  'id' | 'createdAt' | 'updatedAt' | 'userId' | 'status'
+> & {
   startDate?: string;
   endDate?: string;
 };
 
 // Initialize Firebase Admin SDK
-const app = getApps().length
-  ? getApp()
-  : initializeApp();
-
+const app = getApps().length ? getApp() : initializeApp();
 const db = getFirestore(app);
 
-async function getCurrentUserId(): Promise<string> {
-  // This is a placeholder for getting the current user's ID
-  // In a real app, you'd get this from the session or auth state.
-  // For now, we'll assume a hardcoded user for demonstration.
-  // In a real Next.js app with auth, you might use:
-  // const session = await getSession();
-  // if (!session?.user?.id) throw new Error('Not authenticated');
-  // return session.user.id;
-  
-  // This part needs a proper implementation based on your auth setup
-  // For now, let's throw an error if no user is found.
-  // We'll modify the client to provide the userId.
-  const user = await auth().verifyIdToken(
-    // A placeholder token is used here, this would be the user's actual ID token in a real app
-    'placeholder-token'
-  ).catch(() => null);
-
-  //This is a temporary solution and will be replaced with a proper auth check
-  return 'anonymous-user';
-}
+// In a real app, you would get the user's ID from an auth session.
+// For this prototype, we'll need to pass it from the client.
+// A more robust solution would use NextAuth.js or similar to manage sessions.
 
 async function logActivity(
   userId: string,
@@ -59,42 +36,46 @@ async function logActivity(
   action: string,
   details?: string
 ) {
+  if (!userId) return;
   try {
-    const logCollection = collection(db, 'users', userId, 'activity-logs');
-    await addDoc(logCollection, {
+    const logCollection = db.collection(`users/${userId}/activity-logs`);
+    await logCollection.add({
       userId,
       itemId,
       itemName,
       action,
       details,
-      timestamp: serverTimestamp(),
+      timestamp: FieldValue.serverTimestamp(),
     });
   } catch (error) {
-    console.error("Failed to log activity:", error);
+    console.error('Failed to log activity:', error);
     // Decide if you want to throw the error or just log it
   }
 }
 
-export async function createItem(userId: string, itemData: ItemFormData): Promise<Item> {
+export async function createItem(
+  userId: string,
+  itemData: ItemFormData
+): Promise<Item> {
   if (!userId) {
     throw new Error('User not authenticated');
   }
-  const itemsCollection = collection(db, 'users', userId, 'items');
+  const itemsCollection = db.collection(`users/${userId}/items`);
 
   const dataToSave = {
     ...itemData,
     userId: userId,
     status: 'Active' as const,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   };
 
-  const newItemRef = await addDoc(itemsCollection, dataToSave);
-  
+  const newItemRef = await itemsCollection.add(dataToSave);
+
   await logActivity(userId, newItemRef.id, itemData.name, 'created', 'Item created');
 
   const now = Timestamp.now();
-  return { 
+  return {
     ...(itemData as any),
     id: newItemRef.id,
     userId: userId,
@@ -106,28 +87,42 @@ export async function createItem(userId: string, itemData: ItemFormData): Promis
 
 export async function editItem(
   userId: string,
-  itemData: Omit<Item, 'createdAt' | 'updatedAt'> & { createdAt?: Timestamp | Date }
+  itemData: Omit<Item, 'createdAt' | 'updatedAt'> & {
+    createdAt?: Timestamp;
+  }
 ): Promise<Item> {
-   if (!userId) {
+  if (!userId) {
     throw new Error('User not authenticated');
   }
   const { id: itemId, ...dataToUpdate } = itemData;
-  const itemRef = doc(db, 'users', userId, 'items', itemId);
+  const itemRef = db.doc(`users/${userId}/items/${itemId}`);
 
-  const originalDoc = await getDoc(itemRef);
+  const originalDoc = await itemRef.get();
   const originalItem = originalDoc.data() as Item | undefined;
-  
+
   const dataToSave = {
     ...dataToUpdate,
-    updatedAt: serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   };
 
-  await updateDoc(itemRef, dataToSave as any);
+  await itemRef.update(dataToSave);
 
   if (originalItem && originalItem.password !== itemData.password) {
-    await logActivity(userId, itemId, itemData.name, 'password_changed', 'Password was changed');
+    await logActivity(
+      userId,
+      itemId,
+      itemData.name,
+      'password_changed',
+      'Password was changed'
+    );
   } else {
-    await logActivity(userId, itemId, itemData.name, 'updated', 'Item details updated');
+    await logActivity(
+      userId,
+      itemId,
+      itemData.name,
+      'updated',
+      'Item details updated'
+    );
   }
 
   const now = Timestamp.now();
@@ -135,11 +130,10 @@ export async function editItem(
   let finalCreatedAt: Timestamp;
   if (itemData.createdAt instanceof Timestamp) {
     finalCreatedAt = itemData.createdAt;
-  } else if (itemData.createdAt instanceof Date) {
-    finalCreatedAt = Timestamp.fromDate(itemData.createdAt);
   } else {
-    finalCreatedAt = now;
+    finalCreatedAt = now; // Fallback, should ideally not happen
   }
+
 
   return {
     ...itemData,
@@ -148,14 +142,17 @@ export async function editItem(
   } as Item;
 }
 
-export async function duplicateItem(userId: string, itemId: string): Promise<Item> {
+export async function duplicateItem(
+  userId: string,
+  itemId: string
+): Promise<Item> {
   if (!userId) {
     throw new Error('User not authenticated');
   }
-  const itemRef = doc(db, 'users', userId, 'items', itemId);
-  const docSnap = await getDoc(itemRef);
+  const itemRef = db.doc(`users/${userId}/items/${itemId}`);
+  const docSnap = await itemRef.get();
 
-  if (!docSnap.exists()) {
+  if (!docSnap.exists) {
     throw new Error('Item not found');
   }
 
@@ -165,12 +162,12 @@ export async function duplicateItem(userId: string, itemId: string): Promise<Ite
     ...originalItem,
     name: `${originalItem.name} (Copy)`,
     status: 'Active' as const,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   };
 
-  const itemsCollection = collection(db, 'users', userId, 'items');
-  const newItemRef = await addDoc(itemsCollection, duplicatedItemData);
+  const itemsCollection = db.collection(`users/${userId}/items`);
+  const newItemRef = await itemsCollection.add(duplicatedItemData);
 
   const now = Timestamp.now();
   return {
@@ -185,25 +182,24 @@ export async function archiveItem(userId: string, itemId: string) {
   if (!userId) {
     throw new Error('User not authenticated');
   }
-  const itemRef = doc(db, 'users', userId, 'items', itemId);
-  const docSnap = await getDoc(itemRef);
+  const itemRef = db.doc(`users/${userId}/items/${itemId}`);
+  const docSnap = await itemRef.get();
 
-  if (!docSnap.exists()) {
+  if (!docSnap.exists) {
     throw new Error('Item not found');
   }
   const item = docSnap.data() as Item;
 
-  await updateDoc(itemRef, {
+  await itemRef.update({
     status: 'Archived',
     archivedAt: new Date().toISOString(),
-    updatedAt: serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   });
-  
+
   await logActivity(userId, itemId, item.name, 'archived', 'Item was archived');
 
   return { success: true };
 }
-
 
 export async function suggestDateAction(itemDescription: string): Promise<{
   suggestedDate?: string;
