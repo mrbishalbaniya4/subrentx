@@ -321,7 +321,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                     <Input placeholder={getContactValuePlaceholder()} {...field} />
                   </FormControl>
                   <FormMessage />
-                </Item>
+                </FormItem>
               )}
             />
           </div>
