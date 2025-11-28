@@ -15,14 +15,14 @@ import { useState, useEffect } from 'react';
 import { KanbanColumn } from './kanban-column';
 import { KanbanCard } from './kanban-card';
 import type { Item, Status } from '@/lib/types';
-import { editItem, updateItemStatus } from '@/firebase/firestore/mutations';
+import { updateItemStatus } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser } from '@/firebase';
 
 const columns: { id: Status; title: string }[] = [
+  { id: 'Expired', title: 'Expired' },
   { id: 'Active', title: 'Active' },
   { id: 'Sold Out', title: 'Sold Out' },
-  { id: 'Expired', title: 'Expired' },
   { id: 'Archived', title: 'Archived' },
 ];
 
@@ -119,8 +119,12 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
     const overId = String(over.id);
 
     const initialItem = initialItems.find(i => i.id === activeId);
+    const currentItem = items.find(i => i.id === activeId);
 
-    if (!initialItem) return;
+    if (!initialItem || !currentItem) {
+      setItems(initialItems);
+      return;
+    }
     
     let targetStatus: Status | undefined;
     
@@ -133,7 +137,7 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
         targetStatus = overItem.status;
       }
     }
-
+    
     // Only persist changes if the status has actually changed.
     if (targetStatus && initialItem.status !== targetStatus) {
       try {
@@ -147,6 +151,8 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
               title: "Error",
               description: "Failed to update item status."
           });
+          // Revert optimistic update on error
+          setItems(initialItems);
       }
     } else {
       // If no status change, just revert to the server state to ensure consistency.
