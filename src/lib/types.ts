@@ -1,7 +1,7 @@
 import type { Timestamp } from 'firebase/firestore';
 
 export type Status = 'Active' | 'Sold Out' | 'Expired' | 'Archived';
-export type Category = 'Website' | 'WhatsApp' | 'Messenger' | 'Other';
+export type Category = 'Work' | 'Personal' | 'Finance' | 'Shopping' | 'Social' | 'Travel' | 'Other';
 
 export interface Item {
   id: string;

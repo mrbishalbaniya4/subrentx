@@ -96,8 +96,8 @@
         },
         "category": {
           "type": "string",
-          "description": "Category of the contact (e.g., Website, WhatsApp).",
-          "enum": ["Website", "WhatsApp", "Messenger", "Other"]
+          "description": "Category of the item.",
+          "enum": ["Work", "Personal", "Finance", "Shopping", "Social", "Travel", "Other"]
         },
         "contactName": {
             "type": "string",

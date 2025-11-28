@@ -4,6 +4,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +30,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { ItemForm } from './item-form';
-import type { Item } from '@/lib/types';
+import type { Item, Category } from '@/lib/types';
 import { useState, useTransition, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { format, isPast } from 'date-fns';
@@ -40,9 +41,6 @@ import {
   Trash2,
   FilePenLine,
   Loader2,
-  User,
-  Link as LinkIcon,
-  MessageSquare,
   Copy,
   CopyCheck,
   Archive,
@@ -56,6 +54,17 @@ interface KanbanCardProps {
   item: Item;
   isOverlay?: boolean;
 }
+
+const categoryColors: Record<Category, string> = {
+    Work: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+    Personal: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+    Finance: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+    Shopping: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300',
+    Social: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+    Travel: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
+    Other: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+};
+
 
 export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -153,19 +162,6 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     setTimeout(() => {
       setIsCopied(false);
     }, 2000);
-  };
-
-  const getCategoryIcon = (category: string | undefined) => {
-    switch (category) {
-      case 'Website':
-        return <LinkIcon className="h-4 w-4" />;
-      case 'WhatsApp':
-        return <MessageSquare className="h-4 w-4" />;
-      case 'Messenger':
-        return <MessageSquare className="h-4 w-4" />;
-      default:
-        return <User className="h-4 w-4" />;
-    }
   };
 
   return (
@@ -268,13 +264,11 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
               </Button>
             </div>
           )}
-
-
-          {item.contactName && (
-             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {getCategoryIcon(item.category)}
-              <span className="truncate font-medium">{item.contactName}</span>
-            </div>
+          
+          {item.category && (
+            <Badge variant="outline" className={cn("border", categoryColors[item.category])}>
+                {item.category}
+            </Badge>
           )}
 
           {formattedEndDate && (

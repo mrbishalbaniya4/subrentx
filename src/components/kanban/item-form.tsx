@@ -40,7 +40,7 @@ const itemSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   status: z.enum(['Active', 'Sold Out', 'Expired', 'Archived']),
-  category: z.enum(['Website', 'WhatsApp', 'Messenger', 'Other']).optional(),
+  category: z.enum(['Work', 'Personal', 'Finance', 'Shopping', 'Social', 'Travel', 'Other']).optional(),
   contactName: z.string().optional(),
   contactValue: z.string().optional(),
 });
@@ -94,7 +94,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           startDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
           endDate: '',
           status: 'Active',
-          category: 'Website',
+          category: 'Personal',
           contactName: '',
           contactValue: '',
         },
@@ -124,11 +124,10 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
 
   const getContactValuePlaceholder = () => {
     switch (category) {
-      case 'WhatsApp':
-      case 'Messenger':
-        return 'Enter phone number';
-      case 'Website':
-        return 'Enter website URL';
+      case 'Work':
+      case 'Personal':
+      case 'Finance':
+        return 'Enter URL or identifier';
       default:
         return 'Enter contact value';
     }
@@ -148,18 +147,15 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
     startTransition(async () => {
       try {
         if (item) {
-          // When editing, we need to handle the potential difference in date formats.
-          // The form uses string dates, but the `item` object might have Timestamps.
           const itemDataToUpdate = {
-            ...item, // This includes original createdAt, id, etc.
-            ...values, // This overwrites with form values
+            ...item,
+            ...values,
             startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
             endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
           };
           await editItem(firestore, user.uid, itemDataToUpdate);
           toast({ title: 'Success', description: 'Item updated successfully.' });
         } else {
-          // When creating, we convert dates to ISO strings before sending.
            const itemDataToCreate = {
             ...values,
             startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
@@ -190,7 +186,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
     startTransition(async () => {
       const result = await suggestDateAction(itemName);
       if (result.suggestedDate) {
-        // The suggested date is YYYY-MM-DD, we'll keep the current time or default to 00:00
         const currentDate = form.getValues('endDate') ? new Date(form.getValues('endDate')!) : new Date();
         const time = format(currentDate, 'HH:mm');
         const suggestedDateTime = `${result.suggestedDate}T${time}`;
@@ -375,62 +370,34 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
             )}
           />
         </div>
-        <div className="space-y-4 rounded-md border p-4">
-          <h3 className="text-sm font-medium">Contact Details</h3>
-          <FormField
-            control={form.control}
-            name="category"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Category</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="Website">Website</SelectItem>
-                    <SelectItem value="WhatsApp">WhatsApp</SelectItem>
-                    <SelectItem value="Messenger">Messenger</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="contactName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contact Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="contactValue"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Number / URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder={getContactValuePlaceholder()} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
-
-
+        
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Category</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="Work">Work</SelectItem>
+                  <SelectItem value="Personal">Personal</SelectItem>
+                  <SelectItem value="Finance">Finance</SelectItem>
+                  <SelectItem value="Shopping">Shopping</SelectItem>
+                  <SelectItem value="Social">Social</SelectItem>
+                  <SelectItem value="Travel">Travel</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
         <div className="flex items-center justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>
                 Cancel

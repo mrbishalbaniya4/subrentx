@@ -7,10 +7,10 @@ import { KanbanBoard } from '@/components/kanban/kanban-board';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, Timestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Item } from '@/lib/types';
+import type { Item, Category } from '@/lib/types';
 import { subDays, isPast, isWithinInterval, addDays } from 'date-fns';
 
-export type FilterCategory = 'all' | 'Website' | 'WhatsApp' | 'Messenger' | 'Other';
+export type FilterCategory = 'all' | Category;
 export type FilterUrgency = 'all' | 'soon-to-expire' | 'expired';
 export type SortByType = 'alphabetical' | 'endDate' | 'createdAt';
 
