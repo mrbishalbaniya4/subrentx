@@ -104,12 +104,11 @@ export function Header({
       )}
 
       <div className="ml-auto hidden items-center gap-2 md:flex">
-        {user && <AddItemButton />}
         <UserNav />
         <ThemeToggle />
       </div>
 
-       <div className="fixed bottom-4 right-4 z-40 md:hidden">
+       <div className="fixed bottom-4 right-4 z-40">
          {user && <AddItemButton />}
        </div>
        <div className="fixed bottom-20 right-4 z-40 md:hidden">
