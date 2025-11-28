@@ -116,6 +116,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
           endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
         };
+
         if (item) {
           await editItem(firestore, user.uid, { ...itemData, id: item.id });
           toast({ title: 'Success', description: 'Item updated successfully.' });
@@ -128,6 +129,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
         }
         setDialogOpen(false);
       } catch (error) {
+        console.error(error);
         toast({
           variant: 'destructive',
           title: 'Error',
