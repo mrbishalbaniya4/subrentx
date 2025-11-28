@@ -1,0 +1,129 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model. All data is
+ * sandboxed to the authenticated user, meaning a user can only ever access their own
+ * information and the items they create. Unauthorized access to other users' data is
+ * strictly prohibited.
+ *
+ * Data Structure: The data is organized hierarchically to reflect ownership clearly.
+ * A top-level 'users' collection holds user profile documents. All other data,
+ * such as 'items', is stored in subcollections directly under the user's document
+ * (e.g., /users/{userId}/items/{itemId}).
+ *
+ * Key Security Decisions:
+ * - User Enumeration Disabled: Listing the top-level '/users' collection is disallowed
+ *   to prevent malicious actors from scraping a list of all application users.
+ * - Path-Based Security: Rules primarily rely on the document path to determine ownership
+ *   (e.g., checking if the {userId} in the path matches the authenticated user's ID).
+ *   This is highly performant and secure.
+ * - Profile Deletion Disabled: By default, users are not permitted to delete their
+ *   own user profile document to prevent accidental data loss. This can be changed
+ *   if the business logic requires it.
+ *
+ * Denormalization for Authorization: The structure uses path-based ownership, a form
+ * of denormalization where the owner's ID is part of the document path. This avoids
+ * slow and costly `get()` calls in rules. For example, to secure an item at
+ * `/users/{userId}/items/{itemId}`, the rule simply checks `request.auth.uid == userId`
+ * without needing to read any other document.
+ *
+ * Structural Segregation: The entire data model segregates user data into private
+ * trees. There are no public or shared collections, simplifying the security model
+ * by ensuring all subcollections inherit the parent's ownership context.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------------------------------------------------------
+    // Helper Functions
+    // ----------------------------------------------------------------------
+
+    /**
+     * Returns true if the user is signed into the application.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Returns true if the authenticated user's UID matches the provided userId.
+     * This is the primary function for enforcing user ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Ensures an operation is performed by the owner on an existing document.
+     * CRITICAL for all update and delete operations.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * (CREATE) Validates that a new User document contains an 'id' field
+     * that correctly matches the document's path ID. Enforces relational integrity.
+     */
+    function hasValidUserId(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * (UPDATE) Ensures the 'id' field of a User document cannot be changed
+     * after it has been created.
+     */
+    function isUserIdImmutable() {
+      return request.resource.data.id == resource.data.id;
+    }
+    
+    /**
+     * (CREATE) Validates that a new Item document contains a 'userId' field
+     * that correctly matches the owner's ID from the path. Enforces relational integrity.
+     */
+    function hasValidItemData(userId) {
+      return request.resource.data.userId == userId;
+    }
+    
+    /**
+     * (UPDATE) Ensures the 'userId' field of an Item document cannot be changed
+     * after it has been created.
+     */
+    function isItemUserIdImmutable() {
+      return request.resource.data.userId == resource.data.id.userId;
+    }
+
+    // ----------------------------------------------------------------------
+    // Collection Rules
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description Controls access to user profile documents.
+     * @path /users/{userId}
+     * @allow (create) An authenticated user can create their own profile document.
+     * @deny (get) A user cannot read another user's profile.
+     * @principle Restricts access to a user's own data tree and prevents user enumeration.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Disallow listing all users for security
+      allow create: if isOwner(userId) && hasValidUserId(userId);
+      allow update: if isExistingOwner(userId) && isUserIdImmutable();
+      allow delete: if false; // Prevent users from deleting their own accounts by default
+    }
+
+    /**
+     * @description Controls access to a user's private vault items.
+     * @path /users/{userId}/items/{itemId}
+     * @allow (create, get, list, update, delete) A user can perform all operations on items within their own user space.
+     * @deny (get) A user cannot read items belonging to another user.
+     * @principle Enforces document ownership for all operations within a user-specific subcollection.
+     */
+    match /users/{userId}/items/{itemId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && hasValidItemData(userId);
+      allow update: if isExistingOwner(userId) && isItemUserIdImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}
