@@ -15,7 +15,7 @@ import {
 
 // This is a new type that represents the data coming from the form,
 // where dates are still strings.
-type ItemFormData = Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'status'> & {
+type ItemFormData = Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'userId'> & {
   startDate?: string;
   endDate?: string;
 };
@@ -24,7 +24,7 @@ type ItemFormData = Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'st
 export async function createItem(
   db: ReturnType<typeof getFirestore>,
   userId: string,
-  itemData: Omit<ItemFormData, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'status'>
+  itemData: ItemFormData
 ): Promise<Item> {
   const itemsCollection = collection(db, 'users', userId, 'items');
 
@@ -71,7 +71,8 @@ export async function editItem(
     id: itemId,
     ...dataToSave, 
     userId,
-    createdAt: new Timestamp(itemData.createdAt.seconds, itemData.createdAt.nanoseconds), // Preserve original creation date
+    // The createdAt field on the itemData is a Timestamp object, so we can use it directly
+    createdAt: itemData.createdAt,
     updatedAt: Timestamp.now()
   };
 }

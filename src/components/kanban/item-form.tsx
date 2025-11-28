@@ -112,7 +112,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
     startTransition(async () => {
       try {
         if (item) {
-          // For editing, we merge the existing item data with the new form values
           const itemDataToUpdate = {
             ...item,
             ...values,
@@ -120,9 +119,8 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           await editItem(firestore, user.uid, itemDataToUpdate);
           toast({ title: 'Success', description: 'Item updated successfully.' });
         } else {
-          // For creating, we use only the form values, excluding the status.
-          const { status, ...itemDataToCreate } = values;
-          await createItem(firestore, user.uid, itemDataToCreate);
+          // For creating, we use only the form values.
+          await createItem(firestore, user.uid, values);
           toast({ title: 'Success', description: 'Item added successfully.' });
         }
         setDialogOpen(false);
