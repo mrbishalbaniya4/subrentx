@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { VaultboxLogo } from '@/components/icons/vaultbox-logo';
 import { Loader2 } from 'lucide-react';
 import { GoogleIcon } from '@/components/icons/google-icon';
+import { useToast } from '@/hooks/use-toast';
 
 const signupSchema = z
   .object({
@@ -49,6 +50,7 @@ export default function SignupPage() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -63,13 +65,13 @@ export default function SignupPage() {
 
   const onEmailSubmit = async (values: SignupFormValues) => {
     setIsSubmitting(true);
-    await handleEmailSignUp(auth, values.email, values.password);
+    await handleEmailSignUp(auth, values.email, values.password, toast);
     setIsSubmitting(false);
   };
   
   const onGoogleSubmit = async () => {
     setIsSubmitting(true);
-    await handleGoogleSignIn(auth);
+    await handleGoogleSignIn(auth, toast);
     setIsSubmitting(false);
   };
   

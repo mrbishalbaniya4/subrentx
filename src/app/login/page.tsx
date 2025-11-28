@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { VaultboxLogo } from '@/components/icons/vaultbox-logo';
 import { Loader2 } from 'lucide-react';
 import { GoogleIcon } from '@/components/icons/google-icon';
+import { useToast } from '@/hooks/use-toast';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -41,6 +42,7 @@ export default function LoginPage() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -55,13 +57,13 @@ export default function LoginPage() {
 
   const onEmailSubmit = async (values: LoginFormValues) => {
     setIsSubmitting(true);
-    await handleEmailSignIn(auth, values.email, values.password);
+    await handleEmailSignIn(auth, values.email, values.password, toast);
     setIsSubmitting(false);
   };
 
   const onGoogleSubmit = async () => {
     setIsSubmitting(true);
-    await handleGoogleSignIn(auth);
+    await handleGoogleSignIn(auth, toast);
     setIsSubmitting(false);
   };
   
