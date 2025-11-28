@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Header } from '@/components/header';
 import { KanbanBoard } from '@/components/kanban/kanban-board';
 import { GridView } from '@/components/grid-view/grid-view';
@@ -10,6 +10,7 @@ import { collection, query } from 'firebase/firestore';
 import type { Item, FilterCategory, FilterUrgency, SortByType, ViewMode } from '@/lib/types';
 import { isPast, isWithinInterval, addDays } from 'date-fns';
 import type { User } from 'firebase/auth';
+import { updateItemStatus } from '@/firebase/firestore/mutations';
 
 export function KanbanWrapper({ user }: { user: User }) {
   const firestore = useFirestore();
@@ -25,6 +26,23 @@ export function KanbanWrapper({ user }: { user: User }) {
   }, [firestore, user]);
 
   const { data: allItems } = useCollection<Item>(itemsQuery);
+
+  useEffect(() => {
+    if (!allItems || !firestore || !user) return;
+
+    const now = new Date();
+    allItems.forEach(item => {
+      if (item.endDate && item.status !== 'Expired' && item.status !== 'Archived') {
+        const endDate = new Date(item.endDate);
+        if (isPast(endDate)) {
+          // Fire-and-forget update. The real-time listener will handle the UI change.
+          updateItemStatus(firestore, user.uid, item.id, 'Expired');
+        }
+      }
+    });
+    // This effect should only run when the items from the server change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allItems]);
 
   const processedItems = useMemo(() => {
     if (!allItems) return [];
