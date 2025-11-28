@@ -1,27 +1,41 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/header';
 import { KanbanBoard } from '@/components/kanban/kanban-board';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, where, Timestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Item } from '@/lib/types';
+import { subDays } from 'date-fns';
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const itemsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-
-    // Fetch all items for the user
     return query(collection(firestore, 'users', user.uid, 'items'));
   }, [firestore, user]);
 
-  const { data: items, isLoading: areItemsLoading } = useCollection<Item>(itemsQuery);
+  const { data: allItems, isLoading: areItemsLoading } = useCollection<Item>(itemsQuery);
+
+  const filteredItems = useMemo(() => {
+    if (!allItems) return [];
+    if (!searchQuery) return allItems;
+
+    const lowercasedQuery = searchQuery.toLowerCase();
+    return allItems.filter(
+      (item) =>
+        item.name.toLowerCase().includes(lowercasedQuery) ||
+        item.username?.toLowerCase().includes(lowercasedQuery) ||
+        item.notes?.toLowerCase().includes(lowercasedQuery)
+    );
+  }, [allItems, searchQuery]);
+
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -34,7 +48,7 @@ export default function Home() {
   if (isLoading || !user) {
     return (
       <div className="flex min-h-screen w-full flex-col bg-background">
-        <Header />
+        <Header searchQuery={searchQuery} onSearchChange={setSearchQuery} />
         <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
           <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             {[...Array(4)].map((_, i) => (
@@ -55,9 +69,9 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
-      <Header />
+      <Header searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
-        <KanbanBoard initialItems={items || []} />
+        <KanbanBoard initialItems={filteredItems || []} />
       </main>
     </div>
   );
