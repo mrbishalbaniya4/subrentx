@@ -11,7 +11,7 @@ import {
   Timestamp,
   FieldValue,
 } from 'firebase/firestore';
-import type { Item } from '@/lib/types';
+import type { Item, Status } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -95,33 +95,20 @@ export async function editItem(
   const { id: itemId, ...dataToUpdate } = itemData;
   const itemRef = doc(firestore, `users/${userId}/items/${itemId}`);
 
+  const dataToSave = {
+    ...dataToUpdate,
+    updatedAt: serverTimestamp(),
+  };
+
   try {
-    const originalDocSnap = await getDoc(itemRef);
-    if (!originalDocSnap.exists()) {
-        throw new Error("Document not found");
-    }
-    const originalItem = originalDocSnap.data() as Item;
-
-    // Merge incoming data with the original to preserve immutable fields
-    const dataToSave = {
-      ...originalItem,
-      ...dataToUpdate,
-      updatedAt: serverTimestamp(),
-    };
-
-    // Ensure immutable fields are explicitly from the original document
-    dataToSave.userId = originalItem.userId;
-    dataToSave.createdAt = originalItem.createdAt;
-
     await updateDoc(itemRef, dataToSave);
 
-    // Activity logging logic remains the same
-    if (originalItem && originalItem.password !== itemData.password && itemData.password !== undefined) {
+    if (dataToUpdate.password !== undefined) {
         await logActivity(
           firestore,
           userId,
           itemId,
-          dataToSave.name,
+          dataToUpdate.name || 'Item',
           'password_changed',
           'Password was changed'
         );
@@ -130,7 +117,7 @@ export async function editItem(
           firestore,
           userId,
           itemId,
-          dataToSave.name,
+          dataToUpdate.name || 'Item',
           'updated',
           'Item details updated'
         );
@@ -138,26 +125,55 @@ export async function editItem(
 
   } catch(error) {
       console.error('Error updating item:', error);
-      const originalDocSnap = await getDoc(itemRef).catch(() => null);
-      const originalItem = originalDocSnap?.data();
-      
-      const dataToSaveForError = {
-        ...originalItem,
-        ...dataToUpdate,
-        updatedAt: new Date().toISOString(), // Use a plain object for error reporting
-      };
 
       errorEmitter.emit(
         'permission-error',
         new FirestorePermissionError({
             path: itemRef.path,
             operation: 'update',
-            requestResourceData: dataToSaveForError,
+            requestResourceData: dataToSave,
         })
     );
     throw error;
   }
 }
+
+export async function updateItemStatus(
+  firestore: Firestore,
+  userId: string,
+  itemId: string,
+  newStatus: Status
+): Promise<void> {
+  const itemRef = doc(firestore, `users/${userId}/items/${itemId}`);
+  
+  const updateData: { status: Status; archivedAt?: string; updatedAt: FieldValue } = {
+    status: newStatus,
+    updatedAt: serverTimestamp(),
+  };
+
+  if (newStatus === 'Archived') {
+    updateData.archivedAt = new Date().toISOString();
+  }
+
+  try {
+    await updateDoc(itemRef, updateData);
+
+    const itemName = (await getDoc(itemRef)).data()?.name || 'Item';
+    await logActivity(firestore, userId, itemId, itemName, 'updated', `Status changed to ${newStatus}`);
+  } catch (error) {
+    console.error('Error updating item status:', error);
+    errorEmitter.emit(
+      'permission-error',
+      new FirestorePermissionError({
+        path: itemRef.path,
+        operation: 'update',
+        requestResourceData: updateData,
+      })
+    );
+    throw error;
+  }
+}
+
 
 export async function duplicateItem(
     firestore: Firestore,

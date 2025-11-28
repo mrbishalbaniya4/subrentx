@@ -15,7 +15,7 @@ import { useState, useEffect } from 'react';
 import { KanbanColumn } from './kanban-column';
 import { KanbanCard } from './kanban-card';
 import type { Item, Status } from '@/lib/types';
-import { editItem } from '@/firebase/firestore/mutations';
+import { editItem, updateItemStatus } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser } from '@/firebase';
 
@@ -118,10 +118,9 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
     const activeId = String(active.id);
     const overId = String(over.id);
 
-    const activeItem = items.find(i => i.id === activeId);
     const initialItem = initialItems.find(i => i.id === activeId);
 
-    if (!activeItem || !initialItem) return;
+    if (!initialItem) return;
     
     let targetStatus: Status | undefined;
     
@@ -138,12 +137,8 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
     // Only persist changes if the status has actually changed.
     if (targetStatus && initialItem.status !== targetStatus) {
       try {
-          const updatedItem = { ...activeItem, status: targetStatus };
-          if (targetStatus === 'Archived' && !activeItem.archivedAt) {
-            updatedItem.archivedAt = new Date().toISOString();
-          }
           // Fire-and-forget the update. The real-time listener will handle the UI update.
-          editItem(firestore, user.uid, updatedItem);
+          updateItemStatus(firestore, user.uid, activeId, targetStatus);
       } catch (error) {
           // On failure, the real-time listener will eventually revert the state,
           // but we can also show an immediate toast.
