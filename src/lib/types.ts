@@ -2,6 +2,10 @@ import type { Timestamp } from 'firebase/firestore';
 
 export type Status = 'Active' | 'Sold Out' | 'Expired' | 'Archived';
 export type Category = 'Work' | 'Personal' | 'Finance' | 'Shopping' | 'Social' | 'Travel' | 'Other';
+export type FilterCategory = 'all' | Category;
+export type FilterUrgency = 'all' | 'soon-to-expire' | 'expired';
+export type SortByType = 'alphabetical' | 'endDate' | 'createdAt';
+
 
 export interface Item {
   id: string;

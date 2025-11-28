@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Search } from 'lucide-react';
-import type { FilterCategory, FilterUrgency, SortByType } from '@/app/page';
+import type { FilterCategory, FilterUrgency, SortByType } from '@/lib/types';
 
 interface HeaderProps {
   searchQuery: string;
@@ -23,6 +23,7 @@ interface HeaderProps {
   onFilterUrgencyChange: (urgency: FilterUrgency) => void;
   sortBy: SortByType;
   onSortByChange: (sortBy: SortByType) => void;
+  isClient: boolean;
 }
 
 export function Header({
@@ -34,6 +35,7 @@ export function Header({
   onFilterUrgencyChange,
   sortBy,
   onSortByChange,
+  isClient
 }: HeaderProps) {
   const { user } = useUser();
 
@@ -46,7 +48,7 @@ export function Header({
         </h1>
       </div>
       
-      {user && (
+      {user && isClient && (
          <div className="flex w-full flex-col items-center gap-2 md:ml-auto md:w-auto md:flex-row">
             <div className="relative w-full flex-1 md:max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
