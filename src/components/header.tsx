@@ -3,6 +3,7 @@ import { VaultboxLogo } from '@/components/icons/vaultbox-logo';
 import { UserNav } from '@/components/user-nav';
 import { useUser } from '@/firebase';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -10,8 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search } from 'lucide-react';
-import type { FilterCategory, FilterUrgency, SortByType } from '@/lib/types';
+import { Search, LayoutGrid, List, KanbanSquare } from 'lucide-react';
+import type { FilterCategory, FilterUrgency, SortByType, ViewMode } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 interface HeaderProps {
   searchQuery: string;
@@ -22,6 +24,8 @@ interface HeaderProps {
   onFilterUrgencyChange: (urgency: FilterUrgency) => void;
   sortBy: SortByType;
   onSortByChange: (sortBy: SortByType) => void;
+  viewMode: ViewMode;
+  onViewModeChange: (viewMode: ViewMode) => void;
   isClient: boolean;
 }
 
@@ -34,6 +38,8 @@ export function Header({
   onFilterUrgencyChange,
   sortBy,
   onSortByChange,
+  viewMode,
+  onViewModeChange,
   isClient
 }: HeaderProps) {
   const { user } = useUser();
@@ -100,6 +106,36 @@ export function Header({
                       </SelectContent>
                     </Select>
               </div>
+
+               <div className="hidden items-center gap-1 rounded-lg border bg-background p-1 md:flex">
+                  <Button
+                    variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+                    size="icon"
+                    onClick={() => onViewModeChange('kanban')}
+                    className={cn(viewMode === 'kanban' && 'shadow-sm')}
+                  >
+                    <KanbanSquare className="h-5 w-5" />
+                    <span className="sr-only">Kanban View</span>
+                  </Button>
+                  <Button
+                    variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                    size="icon"
+                    onClick={() => onViewModeChange('grid')}
+                     className={cn(viewMode === 'grid' && 'shadow-sm')}
+                  >
+                    <LayoutGrid className="h-5 w-5" />
+                    <span className="sr-only">Grid View</span>
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                    size="icon"
+                    onClick={() => onViewModeChange('list')}
+                     className={cn(viewMode === 'list' && 'shadow-sm')}
+                  >
+                    <List className="h-5 w-5" />
+                    <span className="sr-only">List View</span>
+                  </Button>
+                </div>
           </div>
         )}
 

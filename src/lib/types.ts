@@ -5,6 +5,7 @@ export type Category = 'Work' | 'Personal' | 'Finance' | 'Shopping' | 'Social' |
 export type FilterCategory = 'all' | Category;
 export type FilterUrgency = 'all' | 'soon-to-expire' | 'expired';
 export type SortByType = 'alphabetical' | 'endDate' | 'createdAt';
+export type ViewMode = 'kanban' | 'grid' | 'list';
 
 
 export interface Item {

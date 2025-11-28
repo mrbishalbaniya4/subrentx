@@ -1,0 +1,221 @@
+'use client';
+
+import type { Item, Category } from '@/lib/types';
+import { useState, useTransition } from 'react';
+import { cn } from '@/lib/utils';
+import { format, isPast, formatDistanceToNow } from 'date-fns';
+import {
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { ItemForm } from '@/components/kanban/item-form';
+import {
+  MoreVertical,
+  Trash2,
+  FilePenLine,
+  Loader2,
+  CopyPlus,
+  Archive
+} from 'lucide-react';
+import { archiveItem, duplicateItem } from '@/firebase/firestore/mutations';
+import { useToast } from '@/hooks/use-toast';
+import { useFirestore, useUser } from '@/firebase';
+
+interface ListItemProps {
+  item: Item;
+}
+
+const categoryColors: Record<Category, string> = {
+    Work: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+    Personal: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+    Finance: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+    Shopping: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300',
+    Social: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+    Travel: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
+    Other: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+};
+
+const statusColors: Record<string, string> = {
+  Active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+  'Sold Out': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+  Expired: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+};
+
+
+export function ListItem({ item }: ListItemProps) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
+  
+  const isExpired = item.endDate && isPast(new Date(item.endDate));
+  
+  const endDateDistance = item.endDate
+    ? formatDistanceToNow(new Date(item.endDate), { addSuffix: true })
+    : 'N/A';
+    
+  const lastUpdated = item.updatedAt
+    ? formatDistanceToNow(item.updatedAt.toDate(), { addSuffix: true })
+    : 'a few moments ago';
+
+  const handleArchive = () => {
+    if (!user || !firestore) return;
+    startTransition(async () => {
+      try {
+        await archiveItem(firestore, user.uid, item.id);
+        toast({
+          title: 'Success',
+          description: 'Item moved to Archived.',
+        });
+        setIsDeleteDialogOpen(false);
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to archive item.',
+        });
+      }
+    });
+  };
+
+  const handleDuplicate = () => {
+    if (!user || !firestore) return;
+    startTransition(async () => {
+      try {
+        await duplicateItem(firestore, user.uid, item.id);
+        toast({
+          title: 'Success',
+          description: 'Item duplicated successfully.',
+        });
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to duplicate item.',
+        });
+      }
+    });
+  };
+
+
+  return (
+    <>
+      <TableRow>
+        <TableCell className="font-medium">{item.name}</TableCell>
+        <TableCell>
+          {item.category && (
+            <Badge variant="outline" className={cn("border", categoryColors[item.category])}>
+              {item.category}
+            </Badge>
+          )}
+        </TableCell>
+        <TableCell>
+          <Badge variant="outline" className={cn(statusColors[item.status] || 'bg-gray-100')}>
+            {item.status}
+          </Badge>
+        </TableCell>
+        <TableCell className={cn(isExpired && 'text-destructive')}>
+            {endDateDistance}
+        </TableCell>
+        <TableCell className="text-muted-foreground">{lastUpdated}</TableCell>
+        <TableCell className="text-right">
+           <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full"
+              >
+                <MoreVertical className="h-4 w-4" />
+                <span className="sr-only">More options</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setIsDialogOpen(true)}>
+                <FilePenLine className="mr-2 h-4 w-4" />
+                <span>Edit</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDuplicate} disabled={isPending}>
+                <CopyPlus className="mr-2 h-4 w-4" />
+                <span>Duplicate</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                <Archive className="mr-2 h-4 w-4" />
+                <span>Archive</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
+      </TableRow>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Item</DialogTitle>
+            <DialogDescription>
+              Update the details below. Click save when you're done.
+            </DialogDescription>
+          </DialogHeader>
+          <ItemForm item={item} setDialogOpen={setIsDialogOpen} />
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will move the item "{item.name}" to the Archived column. You can restore it from there.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleArchive}
+              disabled={isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Archive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}

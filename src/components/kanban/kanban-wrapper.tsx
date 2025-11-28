@@ -3,9 +3,11 @@
 import React, { useState, useMemo } from 'react';
 import { Header } from '@/components/header';
 import { KanbanBoard } from '@/components/kanban/kanban-board';
+import { GridView } from '@/components/grid-view/grid-view';
+import { ListView } from '@/components/list-view/list-view';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
-import type { Item, Category, FilterCategory, FilterUrgency, SortByType } from '@/lib/types';
+import type { Item, FilterCategory, FilterUrgency, SortByType, ViewMode } from '@/lib/types';
 import { isPast, isWithinInterval, addDays } from 'date-fns';
 import type { User } from 'firebase/auth';
 
@@ -15,6 +17,7 @@ export function KanbanWrapper({ user }: { user: User }) {
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
   const [filterUrgency, setFilterUrgency] = useState<FilterUrgency>('all');
   const [sortBy, setSortBy] = useState<SortByType>('createdAt');
+  const [viewMode, setViewMode] = useState<ViewMode>('kanban');
 
   const itemsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -76,6 +79,20 @@ export function KanbanWrapper({ user }: { user: User }) {
 
     return items;
   }, [allItems, searchQuery, filterCategory, filterUrgency, sortBy]);
+  
+  const renderView = () => {
+    const activeItems = processedItems.filter(item => item.status !== 'Archived');
+    switch (viewMode) {
+      case 'kanban':
+        return <KanbanBoard initialItems={processedItems || []} />;
+      case 'grid':
+        return <GridView items={activeItems || []} />;
+      case 'list':
+        return <ListView items={activeItems || []} />;
+      default:
+        return <KanbanBoard initialItems={processedItems || []} />;
+    }
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
@@ -88,10 +105,12 @@ export function KanbanWrapper({ user }: { user: User }) {
         onFilterUrgencyChange={setFilterUrgency}
         sortBy={sortBy}
         onSortByChange={setSortBy}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
         isClient={true}
       />
       <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
-        <KanbanBoard initialItems={processedItems || []} />
+        {renderView()}
       </main>
     </div>
   );
