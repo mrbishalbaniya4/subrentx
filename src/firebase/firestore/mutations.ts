@@ -100,8 +100,10 @@ export async function editItem(
   const originalDoc = await getDoc(itemRef);
   const originalItem = originalDoc.data() as Item | undefined;
 
+  // Ensure userId is part of the update payload to satisfy security rules
   const dataToSave = {
     ...dataToUpdate,
+    userId: userId, // Keep the userId to ensure immutability rule passes
     updatedAt: serverTimestamp(),
   };
 
