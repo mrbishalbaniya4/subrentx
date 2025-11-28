@@ -22,7 +22,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Item } from '@/lib/types';
-import { createItem, editItem, suggestDateAction, generatePasswordAction } from '@/app/items/actions';
+import { createItem, editItem } from '@/firebase/firestore/mutations';
+import { suggestDateAction, generatePasswordAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, WandSparkles, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useState, useTransition, useMemo } from 'react';
@@ -89,6 +90,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const { user } = useUser();
+  const firestore = useFirestore();
 
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
@@ -121,7 +123,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
 
   const onSubmit = (values: ItemFormValues) => {
-    if (!user) {
+    if (!user || !firestore) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -139,7 +141,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
             startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
             endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
           };
-          await editItem(user.uid, itemDataToUpdate);
+          await editItem(firestore, user.uid, itemDataToUpdate);
           toast({ title: 'Success', description: 'Item updated successfully.' });
         } else {
            const itemDataToCreate = {
@@ -147,7 +149,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
             startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
             endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
           };
-          await createItem(user.uid, itemDataToCreate);
+          await createItem(firestore, user.uid, itemDataToCreate);
           toast({ title: 'Success', description: 'Item added successfully.' });
         }
         setDialogOpen(false);
@@ -155,8 +157,8 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
         console.error("Form submission error:", error);
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: 'Something went wrong.',
+          title: 'Error Saving Item',
+          description: 'Failed to save item. Please check permissions and try again.',
         });
       }
     });

@@ -15,7 +15,7 @@ import { useState, useEffect } from 'react';
 import { KanbanColumn } from './kanban-column';
 import { KanbanCard } from './kanban-card';
 import type { Item, Status } from '@/lib/types';
-import { editItem } from '@/app/items/actions';
+import { editItem } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser } from '@/firebase';
 
@@ -30,6 +30,7 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
   const [activeItem, setActiveItem] = useState<Item | null>(null);
   const { toast } = useToast();
   const { user } = useUser();
+  const firestore = useFirestore();
   const [items, setItems] = useState(initialItems);
 
   // This effect ensures that the local state is updated whenever the server sends new data.
@@ -108,7 +109,7 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
     setActiveItem(null);
     const { active, over } = event;
 
-    if (!over || !user) {
+    if (!over || !user || !firestore) {
       // If drag is cancelled or conditions aren't met, revert to server state.
       setItems(initialItems);
       return;
@@ -142,7 +143,7 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
             updatedItem.archivedAt = new Date().toISOString();
           }
           // Fire-and-forget the update. The real-time listener will handle the UI update.
-          editItem(user.uid, updatedItem);
+          editItem(firestore, user.uid, updatedItem);
       } catch (error) {
           // On failure, the real-time listener will eventually revert the state,
           // but we can also show an immediate toast.

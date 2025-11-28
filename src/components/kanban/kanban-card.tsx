@@ -47,7 +47,7 @@ import {
   CopyPlus,
   RefreshCcw,
 } from 'lucide-react';
-import { archiveItem, duplicateItem } from '@/app/items/actions';
+import { archiveItem, duplicateItem } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser } from '@/firebase';
 
@@ -75,6 +75,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const { user } = useUser();
+  const firestore = useFirestore();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -115,10 +116,10 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
 
 
   const handleArchive = () => {
-    if (!user) return;
+    if (!user || !firestore) return;
     startTransition(async () => {
       try {
-        await archiveItem(user.uid, item.id);
+        await archiveItem(firestore, user.uid, item.id);
         toast({
           title: 'Success',
           description: 'Item moved to Archived.',
@@ -135,10 +136,10 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
   };
 
   const handleDuplicate = () => {
-    if (!user) return;
+    if (!user || !firestore) return;
     startTransition(async () => {
       try {
-        await duplicateItem(user.uid, item.id);
+        await duplicateItem(firestore, user.uid, item.id);
         toast({
           title: 'Success',
           description: 'Item duplicated successfully.',
