@@ -20,6 +20,7 @@ import {
 import { useUser, useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function UserNav() {
   const { user, isUserLoading } = useUser();
@@ -36,7 +37,7 @@ export function UserNav() {
   };
 
   if (isUserLoading) {
-    return <Button variant="ghost" size="icon" disabled className="h-9 w-9 rounded-full" />;
+    return <Skeleton className="h-12 w-12 rounded-full md:h-9 md:w-9" />;
   }
 
   if (!user) {
@@ -62,8 +63,8 @@ export function UserNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-          <Avatar className="h-9 w-9">
+        <Button variant="ghost" className="relative h-12 w-12 rounded-full md:h-9 md:w-9">
+          <Avatar className="h-12 w-12 md:h-9 md:w-9">
             <AvatarImage src={user.photoURL || undefined} alt="User avatar" />
             <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
           </Avatar>

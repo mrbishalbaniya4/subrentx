@@ -16,9 +16,9 @@ export function AddItemButton() {
 
   return (
     <>
-      <Button onClick={() => setIsOpen(true)}>
-        <PlusCircle />
-        <span>Add Item</span>
+      <Button onClick={() => setIsOpen(true)} size="icon" className="h-12 w-12 rounded-full shadow-lg md:h-auto md:w-auto md:rounded-md md:shadow-none md:size-auto">
+        <PlusCircle className="h-6 w-6 md:h-4 md:w-4" />
+        <span className="sr-only md:not-sr-only md:ml-2">Add Item</span>
       </Button>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
