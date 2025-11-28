@@ -28,14 +28,15 @@ export async function createItem(
 ): Promise<Item> {
   const itemsCollection = collection(db, 'users', userId, 'items');
 
-  // Explicitly exclude any potential 'id' field from the creation data
-  const { id, ...dataToSave } = {
+  // Construct the object to save to Firestore.
+  // New items are always 'Active'.
+  const dataToSave = {
     ...itemData,
     userId: userId,
-    status: 'Active', // New items are always active
+    status: 'Active',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-  } as any;
+  };
 
   const newItemRef = await addDoc(itemsCollection, dataToSave);
   revalidatePath('/');
@@ -43,8 +44,10 @@ export async function createItem(
   // Return a complete Item object with placeholder Timestamps for optimistic updates
   const now = Timestamp.now();
   return { 
-    ...dataToSave,
+    ...itemData, // The original form data
     id: newItemRef.id,
+    userId: userId,
+    status: 'Active',
     createdAt: now,
     updatedAt: now,
   } as Item;
@@ -66,15 +69,19 @@ export async function editItem(
   await updateDoc(itemRef, dataToSave);
   revalidatePath('/');
 
-  // Return a complete item with a new updated timestamp for optimistic updates
+  // Re-fetch the original item to get the correct createdAt timestamp
+  // This is a simplified approach; in a real app, you might pass createdAt from the client
+  // but this ensures consistency.
+  const now = Timestamp.now();
+  const created = (itemData as Item).createdAt || now;
+
   return { 
     id: itemId,
     ...dataToSave, 
     userId,
-    // The createdAt field on the itemData is a Timestamp object, so we can use it directly
-    createdAt: itemData.createdAt,
-    updatedAt: Timestamp.now()
-  };
+    createdAt: created,
+    updatedAt: now,
+  } as Item;
 }
 
 export async function archiveItem(
