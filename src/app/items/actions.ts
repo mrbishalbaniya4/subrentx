@@ -19,17 +19,18 @@ import { initializeFirebase } from '@/firebase';
 export async function createItem(
   db: ReturnType<typeof getFirestore>,
   userId: string,
-  item: Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+  item: Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'status'>
 ) {
   const itemsCollection = collection(db, 'users', userId, 'items');
   const newItem = await addDoc(itemsCollection, {
     ...item,
     userId: userId,
+    status: 'Active', // New items are always active
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
   revalidatePath('/');
-  return { ...item, id: newItem.id, userId };
+  return { ...item, id: newItem.id, userId, status: 'Active' };
 }
 
 export async function editItem(
