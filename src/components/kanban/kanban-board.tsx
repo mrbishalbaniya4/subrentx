@@ -29,18 +29,15 @@ const columns: { id: Status; title: string }[] = [
 export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
   const [activeItem, setActiveItem] = useState<Item | null>(null);
   const { toast } = useToast();
-  const [isClient, setIsClient] = useState(false);
   const firestore = useFirestore();
   const { user } = useUser();
   const [items, setItems] = useState(initialItems);
 
+  // This effect ensures that the local state is updated whenever the server sends new data.
+  // This is the single source of truth.
   useEffect(() => {
     setItems(initialItems);
   }, [initialItems]);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -89,37 +86,46 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
         return currentItems;
       }
   
+      // This is the optimistic update.
+      // We create a new array with the updated item status.
       if (activeItem.status !== newStatus) {
-        const activeIndex = currentItems.findIndex(i => i.id === activeId);
-        currentItems[activeIndex].status = newStatus;
-        if(newStatus === 'Archived' && !currentItems[activeIndex].archivedAt){
-          currentItems[activeIndex].archivedAt = new Date().toISOString();
-        }
-        return [...currentItems];
+        return currentItems.map(i => {
+          if (i.id === activeId) {
+            return {
+              ...i,
+              status: newStatus,
+              archivedAt: newStatus === 'Archived' && !i.archivedAt ? new Date().toISOString() : i.archivedAt
+            };
+          }
+          return i;
+        });
       }
   
       return currentItems;
     });
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
+  const handleDragEnd = (event: DragEndEvent) => {
     setActiveItem(null);
+    const { active, over } = event;
 
     if (!over || !firestore || !user) {
-      // If the drag is cancelled, revert to the initial server state
+      // If drag is cancelled or conditions aren't met, revert to server state.
       setItems(initialItems);
       return;
     };
+    
     const activeId = String(active.id);
     const overId = String(over.id);
 
     const activeItem = items.find(i => i.id === activeId);
-    if (!activeItem) return;
+    const initialItem = initialItems.find(i => i.id === activeId);
+
+    if (!activeItem || !initialItem) return;
     
     let targetStatus: Status | undefined;
     
-    // Find target status
+    // Find the target status based on where the item was dropped
     if (columns.some(c => c.id === overId)) {
       targetStatus = overId as Status;
     } else {
@@ -129,30 +135,27 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
       }
     }
 
-    if (!targetStatus || activeItem.status === targetStatus) {
-       // No status change, but maybe order changed. We'll let Firestore handle the final state.
+    // Only persist changes if the status has actually changed.
+    if (targetStatus && initialItem.status !== targetStatus) {
+      try {
+          const updatedItem = { ...activeItem, status: targetStatus };
+          if (targetStatus === 'Archived' && !activeItem.archivedAt) {
+            updatedItem.archivedAt = new Date().toISOString();
+          }
+          // Fire-and-forget the update. The real-time listener will handle the UI update.
+          editItem(firestore, user.uid, updatedItem);
+      } catch (error) {
+          // On failure, the real-time listener will eventually revert the state,
+          // but we can also show an immediate toast.
+          toast({
+              variant: "destructive",
+              title: "Error",
+              description: "Failed to update item status."
+          });
+      }
+    } else {
+      // If no status change, just revert to the server state to ensure consistency.
       setItems(initialItems);
-      return;
-    }
-
-    // Optimistic update has already happened in handleDragOver.
-    // Now, persist the change to the backend.
-    try {
-        const updatedItem = { ...activeItem, status: targetStatus };
-        if (targetStatus === 'Archived' && !activeItem.archivedAt) {
-          updatedItem.archivedAt = new Date().toISOString();
-        }
-        // We don't need to await this if revalidatePath is called
-        // as the useCollection hook will update the UI.
-        editItem(firestore, user.uid, updatedItem);
-    } catch (error) {
-        // Revert the optimistic update on failure
-        setItems(initialItems);
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to update item status."
-        });
     }
   };
 
@@ -173,7 +176,6 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
               id={column.id}
               title={column.title}
               items={columnItems}
-              isDragDisabled={!isClient}
             />
           );
         })}

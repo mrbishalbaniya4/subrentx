@@ -2,7 +2,6 @@
 
 import { suggestExpirationDate } from '@/ai/flows/suggest-expiration-date';
 import type { Item } from '@/lib/types';
-import { revalidatePath } from 'next/cache';
 import {
   getFirestore,
   collection,
@@ -38,7 +37,6 @@ export async function createItem(
   };
 
   const newItemRef = await addDoc(itemsCollection, dataToSave);
-  revalidatePath('/');
   
   const now = Timestamp.now();
   return { 
@@ -65,18 +63,19 @@ export async function editItem(
   };
 
   await updateDoc(itemRef, dataToSave);
-  revalidatePath('/');
 
   const docSnap = await getDoc(itemRef);
-  const existingData = docSnap.data() as Item | undefined;
+  const existingData = docSnap.data();
 
-  return { 
+  // Create a serializable Item object for the client.
+  // The key is to convert Timestamps to something the client can handle, like ISO strings,
+  // but since we are re-fetching with onSnapshot, we can just return a consistent object.
+  return {
     id: itemId,
-    ...dataToSave, 
-    userId,
-    // Ensure we return valid Timestamps, not JS Date objects or strings
-    createdAt: existingData?.createdAt || Timestamp.now(),
-    updatedAt: Timestamp.now(), // Optimistic update with a real timestamp
+    userId: userId,
+    ...dataToUpdate,
+    createdAt: existingData?.createdAt || Timestamp.now(), // Ensure createdAt is a Timestamp
+    updatedAt: Timestamp.now(), // Optimistic update with a new Timestamp
   } as Item;
 }
 
@@ -91,7 +90,6 @@ export async function archiveItem(
     archivedAt: new Date().toISOString(),
     updatedAt: serverTimestamp(),
   });
-  revalidatePath('/');
   return { success: true };
 }
 

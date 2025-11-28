@@ -51,16 +51,20 @@ import { useFirestore, useUser } from '@/firebase';
 interface KanbanCardProps {
   item: Item;
   isOverlay?: boolean;
-  isDragDisabled?: boolean;
 }
 
-export function KanbanCard({ item, isOverlay, isDragDisabled }: KanbanCardProps) {
+export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user } = useUser();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const {
     setNodeRef,
@@ -75,7 +79,7 @@ export function KanbanCard({ item, isOverlay, isDragDisabled }: KanbanCardProps)
       type: 'item',
       item,
     },
-    disabled: isDragDisabled,
+    disabled: !isClient,
   });
 
   const style = {
@@ -134,7 +138,7 @@ export function KanbanCard({ item, isOverlay, isDragDisabled }: KanbanCardProps)
           isDragging && 'opacity-50',
           isOverlay && 'shadow-2xl'
         )}
-        {...(!isDragDisabled ? attributes : {})}
+        {...(isClient ? attributes : {})}
       >
         <CardHeader className="relative flex-row items-start gap-4 space-y-0 p-4">
           <div
@@ -146,12 +150,12 @@ export function KanbanCard({ item, isOverlay, isDragDisabled }: KanbanCardProps)
           >
             <CardTitle className="text-lg font-headline">{item.name}</CardTitle>
           </div>
-          {!isDragDisabled && (
+          {isClient && (
             <div
               {...listeners}
               className={cn(
                 'cursor-grab p-1 text-muted-foreground transition-opacity hover:opacity-80 group-hover:opacity-100 md:opacity-0',
-                isDragDisabled && 'cursor-not-allowed'
+                !isClient && 'cursor-not-allowed'
               )}
             >
               <GripVertical className="h-5 w-5" />
