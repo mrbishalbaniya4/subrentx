@@ -29,7 +29,7 @@ import { useState, useTransition, useMemo } from 'react';
 import { useFirestore, useUser } from '@/firebase';
 import { format, addDays } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
-import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 const itemSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -100,7 +100,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
         },
   });
 
-  const category = form.watch('category');
   const password = form.watch('password') || '';
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
 
@@ -121,18 +120,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
     'Good',
     'Strong',
   ];
-
-  const getContactValuePlaceholder = () => {
-    switch (category) {
-      case 'Work':
-      case 'Personal':
-      case 'Finance':
-        return 'Enter URL or identifier';
-      default:
-        return 'Enter contact value';
-    }
-  };
-
 
   const onSubmit = (values: ItemFormValues) => {
     if (!firestore || !user) {
@@ -237,168 +224,185 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Netflix Subscription" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="username"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Username/Email</FormLabel>
-                <FormControl>
-                  <Input placeholder="user@example.com" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <div className="relative">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Netflix Subscription" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
                     </FormControl>
-                     <Button
+                    <SelectContent>
+                      <SelectItem value="Work">Work</SelectItem>
+                      <SelectItem value="Personal">Personal</SelectItem>
+                      <SelectItem value="Finance">Finance</SelectItem>
+                      <SelectItem value="Shopping">Shopping</SelectItem>
+                      <SelectItem value="Social">Social</SelectItem>
+                      <SelectItem value="Travel">Travel</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        </div>
+        
+        <Separator />
+
+        <div className="space-y-4">
+            <h3 className="text-lg font-medium">Credentials</h3>
+            <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username/Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="user@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <div className="relative">
+                        <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                         <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-accent"
+                            onClick={handleGeneratePassword}
+                            disabled={isGenerating}
+                            aria-label="Generate Password"
+                        >
+                            {isGenerating ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+                        </Button>
+                    </div>
+                     <div className="space-y-1 pt-1">
+                        <Progress value={passwordStrength * 20} className="h-2" />
+                        <p className="text-xs font-medium" style={{ color: strengthColors[passwordStrength].replace('bg-', '').replace('-500', '') }}>
+                            {strengthLabels[passwordStrength]}
+                        </p>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+        </div>
+
+        <Separator />
+        
+        <div className="space-y-4">
+            <h3 className="text-lg font-medium">Details</h3>
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Add any relevant notes here." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        </div>
+        
+        <Separator />
+        
+        <div className="space-y-4">
+            <h3 className="text-lg font-medium">Dates</h3>
+             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+               <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Date</FormLabel>
+                    <FormControl>
+                      <Input type="datetime-local" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Date</FormLabel>
+                    <div className="relative">
+                      <FormControl>
+                        <Input type="datetime-local" {...field} />
+                      </FormControl>
+                      <Button
                         type="button"
                         size="icon"
                         variant="ghost"
                         className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-accent"
-                        onClick={handleGeneratePassword}
-                        disabled={isGenerating}
-                        aria-label="Generate Password"
-                    >
-                        {isGenerating ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-                    </Button>
-                </div>
-                 <div className="space-y-1">
-                    <Progress value={passwordStrength * 20} className="h-2" />
-                    <p className="text-xs text-muted-foreground" style={{ color: strengthColors[passwordStrength].replace('bg-', '').replace('-500', '') }}>
-                        {strengthLabels[passwordStrength]}
-                    </p>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Notes</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Add any relevant notes here." {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-           <FormField
-            control={form.control}
-            name="startDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Start Date</FormLabel>
-                <FormControl>
-                  <Input type="datetime-local" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="endDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>End Date</FormLabel>
-                <div className="relative">
-                  <FormControl>
-                    <Input type="datetime-local" {...field} />
-                  </FormControl>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-accent"
-                    onClick={handleSuggestDate}
-                    disabled={isSuggesting}
-                    aria-label="Suggest End Date"
-                  >
-                    {isSuggesting ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      <WandSparkles />
-                    )}
-                  </Button>
-                </div>
-                <FormMessage />
-                 <div className="flex flex-wrap gap-2 pt-2">
-                  {[3, 5, 7, 10, 15, 20, 30, 90].map((days) => (
-                    <Button
-                      key={days}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEndDateInDays(days)}
-                      className="text-xs"
-                    >
-                      {days}d
-                    </Button>
-                  ))}
-                </div>
-              </FormItem>
-            )}
-          />
+                        onClick={handleSuggestDate}
+                        disabled={isSuggesting}
+                        aria-label="Suggest End Date"
+                      >
+                        {isSuggesting ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <WandSparkles />
+                        )}
+                      </Button>
+                    </div>
+                    <FormMessage />
+                     <div className="flex flex-wrap gap-2 pt-2">
+                      {[3, 5, 7, 10, 15, 20, 30, 90].map((days) => (
+                        <Button
+                          key={days}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEndDateInDays(days)}
+                          className="text-xs"
+                        >
+                          {days}d
+                        </Button>
+                      ))}
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
         </div>
         
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="Work">Work</SelectItem>
-                  <SelectItem value="Personal">Personal</SelectItem>
-                  <SelectItem value="Finance">Finance</SelectItem>
-                  <SelectItem value="Shopping">Shopping</SelectItem>
-                  <SelectItem value="Social">Social</SelectItem>
-                  <SelectItem value="Travel">Travel</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-2 pt-4">
             <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>
                 Cancel
             </Button>
