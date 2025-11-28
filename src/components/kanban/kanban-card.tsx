@@ -20,7 +20,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
   Dialog,
@@ -31,7 +30,7 @@ import {
 } from '@/components/ui/dialog';
 import { ItemForm } from './item-form';
 import type { Item } from '@/lib/types';
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { format, isPast } from 'date-fns';
 import {
@@ -60,6 +59,11 @@ export function KanbanCard({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const {
     setNodeRef,
@@ -126,15 +130,17 @@ export function KanbanCard({
           >
             <CardTitle className="text-lg font-headline">{item.name}</CardTitle>
           </div>
-          <div
-            {...listeners}
-            className={cn(
-              'cursor-grab p-1 text-muted-foreground transition-opacity hover:opacity-80 group-hover:opacity-100 md:opacity-0',
-              isDragDisabled && 'cursor-not-allowed'
-            )}
-          >
-            <GripVertical className="h-5 w-5" />
-          </div>
+          {isClient && (
+            <div
+              {...listeners}
+              className={cn(
+                'cursor-grab p-1 text-muted-foreground transition-opacity hover:opacity-80 group-hover:opacity-100 md:opacity-0',
+                isDragDisabled && 'cursor-not-allowed'
+              )}
+            >
+              <GripVertical className="h-5 w-5" />
+            </div>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
