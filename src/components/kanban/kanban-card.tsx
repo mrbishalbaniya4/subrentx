@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useSortable } from '@dnd-kit/sortable';
@@ -37,7 +38,7 @@ import { ItemForm } from './item-form';
 import type { Item, Category, Status } from '@/lib/types';
 import { useState, useTransition, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { format, isPast, formatDistanceToNow } from 'date-fns';
+import { format, isPast, formatDistanceToNow, differenceInDays } from 'date-fns';
 import {
   CalendarClock,
   GripVertical,
@@ -108,17 +109,10 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     transform: CSS.Transform.toString(transform),
   };
 
-  const isExpired =
-    item.endDate && isPast(new Date(item.endDate));
-  
   const formattedEndDate = item.endDate
     ? format(new Date(item.endDate), 'MMM d, yyyy HH:mm')
     : null;
 
-  const endDateDistance = item.endDate
-    ? formatDistanceToNow(new Date(item.endDate), { addSuffix: true })
-    : null;
-    
   const lastUpdated = item.updatedAt
     ? formatDistanceToNow(item.updatedAt.toDate(), { addSuffix: true })
     : 'a few moments ago';
@@ -196,6 +190,33 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
         });
       }
     });
+  };
+
+  const getUrgencyBadge = () => {
+    if (!item.endDate) return null;
+
+    const endDate = new Date(item.endDate);
+    const now = new Date();
+    const daysUntilEnd = differenceInDays(endDate, now);
+    const isExpired = isPast(endDate);
+    const distanceText = formatDistanceToNow(endDate, { addSuffix: true });
+
+    let badgeClass = 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300';
+    let text = distanceText;
+
+    if (isExpired) {
+      badgeClass = 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-300';
+      text = `Expired ${distanceText}`;
+    } else if (daysUntilEnd <= 2) {
+      badgeClass = 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300';
+    }
+
+    return (
+      <Badge variant="outline" className={cn('flex items-center gap-1.5', badgeClass)}>
+        <CalendarClock className="h-3 w-3" />
+        <span title={formattedEndDate}>{text}</span>
+      </Badge>
+    );
   };
 
   return (
@@ -325,14 +346,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                 </Badge>
             )}
 
-            {formattedEndDate && (
-                <Badge variant={isExpired ? "destructive" : "outline"} className="flex items-center gap-1.5">
-                    <CalendarClock className="h-3 w-3" />
-                    <span className={cn(isExpired && 'font-bold')} title={formattedEndDate}>
-                       {endDateDistance}
-                    </span>
-                </Badge>
-            )}
+            {getUrgencyBadge()}
            </div>
 
             <div className="flex items-center gap-1.5 pt-2 text-xs text-muted-foreground">
@@ -381,3 +395,5 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     </>
   );
 }
+
+    

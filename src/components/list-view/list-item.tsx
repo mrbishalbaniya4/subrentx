@@ -1,9 +1,10 @@
+
 'use client';
 
 import type { Item, Category, Status } from '@/lib/types';
 import { useState, useTransition } from 'react';
 import { cn } from '@/lib/utils';
-import { format, isPast, formatDistanceToNow } from 'date-fns';
+import { format, isPast, formatDistanceToNow, differenceInDays } from 'date-fns';
 import {
   TableRow,
   TableCell,
@@ -81,12 +82,6 @@ export function ListItem({ item }: ListItemProps) {
   const { user } = useUser();
   const firestore = useFirestore();
   
-  const isExpired = item.endDate && isPast(new Date(item.endDate));
-  
-  const endDateDistance = item.endDate
-    ? formatDistanceToNow(new Date(item.endDate), { addSuffix: true })
-    : 'N/A';
-    
   const lastUpdated = item.updatedAt
     ? formatDistanceToNow(item.updatedAt.toDate(), { addSuffix: true })
     : 'a few moments ago';
@@ -149,6 +144,32 @@ export function ListItem({ item }: ListItemProps) {
     });
   };
 
+  const getUrgencyInfo = () => {
+    if (!item.endDate) return { text: 'N/A', className: '' };
+
+    const endDate = new Date(item.endDate);
+    const now = new Date();
+    const daysUntilEnd = differenceInDays(endDate, now);
+    const isExpired = isPast(endDate);
+    const distanceText = formatDistanceToNow(endDate, { addSuffix: true });
+
+    if (isExpired) {
+      return {
+        text: `Expired ${distanceText}`,
+        className: 'text-red-600 dark:text-red-500 font-medium',
+      };
+    }
+    if (daysUntilEnd <= 2) {
+      return {
+        text: distanceText,
+        className: 'text-yellow-600 dark:text-yellow-500 font-medium',
+      };
+    }
+    return { text: distanceText, className: 'text-green-600 dark:text-green-500' };
+  };
+
+  const urgency = getUrgencyInfo();
+
 
   return (
     <>
@@ -166,8 +187,8 @@ export function ListItem({ item }: ListItemProps) {
             {item.status}
           </Badge>
         </TableCell>
-        <TableCell className={cn(isExpired && 'text-destructive')}>
-            {endDateDistance}
+        <TableCell className={cn(urgency.className)}>
+            {urgency.text}
         </TableCell>
         <TableCell className="text-muted-foreground">{lastUpdated}</TableCell>
         <TableCell className="text-right">
@@ -262,3 +283,5 @@ export function ListItem({ item }: ListItemProps) {
     </>
   );
 }
+
+    
