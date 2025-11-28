@@ -169,7 +169,9 @@ export function ListItem({ item }: ListItemProps) {
   };
 
   const urgency = getUrgencyInfo();
-
+  const profit = item.profit ?? 0;
+  const isProfit = profit > 0;
+  const isLoss = profit < 0;
 
   return (
     <>
@@ -189,6 +191,13 @@ export function ListItem({ item }: ListItemProps) {
         </TableCell>
         <TableCell className={cn(urgency.className)}>
             {urgency.text}
+        </TableCell>
+        <TableCell className={cn(
+            isProfit && 'text-green-600 dark:text-green-500',
+            isLoss && 'text-red-600 dark:text-red-500',
+            'font-medium'
+        )}>
+            {profit !== 0 ? `${isProfit ? '+' : ''}$${profit.toFixed(2)}` : 'N/A'}
         </TableCell>
         <TableCell className="text-muted-foreground">{lastUpdated}</TableCell>
         <TableCell className="text-right">

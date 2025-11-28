@@ -26,7 +26,7 @@ import { createItem, editItem } from '@/firebase/firestore/mutations';
 import { suggestDateAction, generatePasswordAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, WandSparkles, RefreshCw, Eye, EyeOff } from 'lucide-react';
-import { useState, useTransition, useMemo } from 'react';
+import { useState, useTransition, useMemo, useEffect } from 'react';
 import { useFirestore, useUser } from '@/firebase';
 import { format, addDays } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
@@ -44,6 +44,9 @@ const itemSchema = z.object({
   category: z.enum(['Work', 'Personal', 'Finance', 'Shopping', 'Social', 'Travel', 'Other']).optional(),
   contactName: z.string().optional(),
   contactValue: z.string().optional(),
+  purchasePrice: z.coerce.number().optional(),
+  sellingPrice: z.coerce.number().optional(),
+  profit: z.coerce.number().optional(),
 });
 
 type ItemFormValues = z.infer<typeof itemSchema>;
@@ -116,11 +119,24 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           category: 'Personal',
           contactName: '',
           contactValue: '',
+          purchasePrice: 0,
+          sellingPrice: 0,
+          profit: 0,
         },
   });
+  
+  const purchasePrice = form.watch('purchasePrice') || 0;
+  const sellingPrice = form.watch('sellingPrice') || 0;
+
+  useEffect(() => {
+    const profit = sellingPrice - purchasePrice;
+    form.setValue('profit', profit);
+  }, [purchasePrice, sellingPrice, form]);
+
 
   const password = form.watch('password') || '';
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
+  const profit = form.watch('profit') || 0;
 
   const onSubmit = (values: ItemFormValues) => {
     if (!user || !firestore) {
@@ -134,22 +150,16 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
 
     startTransition(async () => {
       try {
-        if (item) {
-          const itemDataToUpdate = {
-            ...item,
+        const itemData = {
             ...values,
             startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
             endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
-          };
-          await editItem(firestore, user.uid, itemDataToUpdate);
+        };
+        if (item) {
+          await editItem(firestore, user.uid, { ...item, ...itemData });
           toast({ title: 'Success', description: 'Item updated successfully.' });
         } else {
-           const itemDataToCreate = {
-            ...values,
-            startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
-            endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
-          };
-          await createItem(firestore, user.uid, itemDataToCreate);
+          await createItem(firestore, user.uid, itemData);
           toast({ title: 'Success', description: 'Item added successfully.' });
         }
         setDialogOpen(false);
@@ -334,15 +344,52 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
         <Separator />
         
         <div className="space-y-4">
-            <h3 className="text-lg font-medium">Details</h3>
+            <h3 className="text-lg font-medium">Financials</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                 <FormField
+                    control={form.control}
+                    name="purchasePrice"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Purchase Price</FormLabel>
+                        <FormControl>
+                            <Input type="number" placeholder="e.g., 100" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                 />
+                 <FormField
+                    control={form.control}
+                    name="sellingPrice"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Selling Price</FormLabel>
+                        <FormControl>
+                            <Input type="number" placeholder="e.g., 150" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                 />
+            </div>
+            <div className="font-medium">
+                Profit: <span className={cn(profit > 0 ? 'text-green-600' : 'text-red-600')}>{profit.toFixed(2)}</span>
+            </div>
+        </div>
+
+        <Separator />
+        
+        <div className="space-y-4">
+            <h3 className="text-lg font-medium">Notes</h3>
             <FormField
               control={form.control}
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes</FormLabel>
+                  <FormLabel>Comments</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Add any relevant notes here." {...field} />
+                    <Textarea placeholder="Add any relevant comments here." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

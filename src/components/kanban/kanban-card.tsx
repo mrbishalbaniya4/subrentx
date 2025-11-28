@@ -52,6 +52,8 @@ import {
   CopyPlus,
   RefreshCcw,
   ArrowRight,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 import { archiveItem, duplicateItem, updateItemStatus } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
@@ -219,6 +221,23 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     );
   };
 
+  const getProfitBadge = () => {
+    if (item.profit === undefined || item.profit === 0) return null;
+
+    const isProfit = item.profit > 0;
+    const badgeClass = isProfit
+      ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300'
+      : 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-300';
+    const Icon = isProfit ? TrendingUp : TrendingDown;
+
+    return (
+      <Badge variant="outline" className={cn('flex items-center gap-1.5', badgeClass)}>
+        <Icon className="h-3 w-3" />
+        <span>{isProfit ? 'Profit' : 'Loss'}: ${Math.abs(item.profit).toFixed(2)}</span>
+      </Badge>
+    );
+  };
+
   return (
     <>
       <Card
@@ -347,6 +366,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
             )}
 
             {getUrgencyBadge()}
+            {getProfitBadge()}
            </div>
 
             <div className="flex items-center gap-1.5 pt-2 text-xs text-muted-foreground">
