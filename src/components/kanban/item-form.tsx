@@ -31,6 +31,7 @@ import { useFirestore, useUser } from '@/firebase';
 import { format, addDays } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 const itemSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -381,13 +382,13 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
         <Separator />
         
         <div className="space-y-4">
-            <h3 className="text-lg font-medium">Notes</h3>
+            <h3 className="text-lg font-medium">Comments</h3>
             <FormField
               control={form.control}
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Comments</FormLabel>
+                  <FormLabel>Notes</FormLabel>
                   <FormControl>
                     <Textarea placeholder="Add any relevant comments here." {...field} />
                   </FormControl>
@@ -475,3 +476,5 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
     </Form>
   );
 }
+
+    
