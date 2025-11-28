@@ -28,13 +28,14 @@ export async function createItem(
 ): Promise<Item> {
   const itemsCollection = collection(db, 'users', userId, 'items');
 
-  const dataToSave = {
+  // Explicitly exclude any potential 'id' field from the creation data
+  const { id, ...dataToSave } = {
     ...itemData,
     userId: userId,
     status: 'Active', // New items are always active
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-  };
+  } as any;
 
   const newItemRef = await addDoc(itemsCollection, dataToSave);
   revalidatePath('/');
@@ -54,10 +55,11 @@ export async function editItem(
   userId: string,
   itemData: Omit<Item, 'createdAt' | 'updatedAt' | 'userId'>
 ): Promise<Item> {
-  const itemRef = doc(db, 'users', userId, 'items', itemData.id);
+  const { id: itemId, ...dataToUpdate } = itemData;
+  const itemRef = doc(db, 'users', userId, 'items', itemId);
   
   const dataToSave = {
-    ...itemData,
+    ...dataToUpdate,
     updatedAt: serverTimestamp(),
   };
 
@@ -66,6 +68,7 @@ export async function editItem(
 
   // Return a complete item with a new updated timestamp for optimistic updates
   return { 
+    id: itemId,
     ...dataToSave, 
     userId,
     createdAt: new Timestamp(itemData.createdAt.seconds, itemData.createdAt.nanoseconds), // Preserve original creation date
