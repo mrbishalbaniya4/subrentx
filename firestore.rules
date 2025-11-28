@@ -6,8 +6,8 @@
  *
  * Data Structure: The data is organized hierarchically to reflect ownership clearly.
  * A top-level 'users' collection holds user profile documents. All other data,
- * such as 'items', is stored in subcollections directly under the user's document
- * (e.g., /users/{userId}/items/{itemId}).
+ * such as 'items' and 'activity-logs', is stored in subcollections directly under
+ * the user's document (e.g., /users/{userId}/items/{itemId}).
  *
  * Key Security Decisions:
  * - User Enumeration Disabled: Listing the top-level '/users' collection is disallowed
@@ -89,7 +89,14 @@ service cloud.firestore {
      * after it has been created.
      */
     function isItemUserIdImmutable() {
-      return request.resource.data.userId == resource.data.id.userId;
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    /**
+     * (CREATE) Validates that a new ActivityLog document has the correct owner ID.
+     */
+    function hasValidLogData(userId) {
+      return request.resource.data.userId == userId;
     }
 
     // ----------------------------------------------------------------------
@@ -109,21 +116,35 @@ service cloud.firestore {
       allow create: if isOwner(userId) && hasValidUserId(userId);
       allow update: if isExistingOwner(userId) && isUserIdImmutable();
       allow delete: if false; // Prevent users from deleting their own accounts by default
-    }
 
-    /**
-     * @description Controls access to a user's private vault items.
-     * @path /users/{userId}/items/{itemId}
-     * @allow (create, get, list, update, delete) A user can perform all operations on items within their own user space.
-     * @deny (get) A user cannot read items belonging to another user.
-     * @principle Enforces document ownership for all operations within a user-specific subcollection.
-     */
-    match /users/{userId}/items/{itemId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && hasValidItemData(userId);
-      allow update: if isExistingOwner(userId) && isItemUserIdImmutable();
-      allow delete: if isExistingOwner(userId);
+      /**
+       * @description Controls access to a user's private vault items.
+       * @path /users/{userId}/items/{itemId}
+       * @allow (create, get, list, update, delete) A user can perform all operations on items within their own user space.
+       * @deny (get) A user cannot read items belonging to another user.
+       * @principle Enforces document ownership for all operations within a user-specific subcollection.
+       */
+      match /items/{itemId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidItemData(userId);
+        allow update: if isExistingOwner(userId) && isItemUserIdImmutable();
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Controls access to a user's activity log.
+       * @path /users/{userId}/activity-logs/{logId}
+       * @allow (read, list, create) A user can read their own logs and the system can create them.
+       * @deny (update, delete) Logs are immutable.
+       */
+      match /activity-logs/{logId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidLogData(userId);
+        allow update: if false;
+        allow delete: if false;
+      }
     }
   }
 }

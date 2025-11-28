@@ -21,6 +21,24 @@ type ItemFormData = Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'st
   endDate?: string;
 };
 
+async function logActivity(
+  db: ReturnType<typeof getFirestore>,
+  userId: string,
+  itemId: string,
+  itemName: string,
+  action: string,
+  details?: string
+) {
+  const logCollection = collection(db, 'users', userId, 'activity-logs');
+  await addDoc(logCollection, {
+    userId,
+    itemId,
+    itemName,
+    action,
+    details,
+    timestamp: serverTimestamp(),
+  });
+}
 
 export async function createItem(
   db: ReturnType<typeof getFirestore>,
@@ -39,6 +57,8 @@ export async function createItem(
 
   const newItemRef = await addDoc(itemsCollection, dataToSave);
   
+  await logActivity(db, userId, newItemRef.id, itemData.name, 'created', 'Item created');
+
   const now = Timestamp.now();
   // We can't just spread dataToSave because createdAt/updatedAt are server values.
   // We return an optimistic response with client-generated timestamps.
@@ -59,6 +79,10 @@ export async function editItem(
 ): Promise<Item> {
   const { id: itemId, ...dataToUpdate } = itemData;
   const itemRef = doc(db, 'users', userId, 'items', itemId);
+
+  // Fetch the original item to compare password
+  const originalDoc = await getDoc(itemRef);
+  const originalItem = originalDoc.data() as Item | undefined;
   
   // Ensure we don't try to write the id field back to the document
   const dataToSave = {
@@ -67,6 +91,12 @@ export async function editItem(
   };
 
   await updateDoc(itemRef, dataToSave as any);
+
+  if (originalItem && originalItem.password !== itemData.password) {
+    await logActivity(db, userId, itemId, itemData.name, 'password_changed', 'Password was changed');
+  } else {
+    await logActivity(db, userId, itemId, itemData.name, 'updated', 'Item details updated');
+  }
 
   const now = Timestamp.now();
   
@@ -128,11 +158,21 @@ export async function archiveItem(
   itemId: string
 ) {
   const itemRef = doc(db, 'users', userId, 'items', itemId);
+  const docSnap = await getDoc(itemRef);
+
+  if (!docSnap.exists()) {
+    throw new Error('Item not found');
+  }
+  const item = docSnap.data() as Item;
+
   await updateDoc(itemRef, {
     status: 'Archived',
     archivedAt: new Date().toISOString(),
     updatedAt: serverTimestamp(),
   });
+  
+  await logActivity(db, userId, itemId, item.name, 'archived', 'Item was archived');
+
   return { success: true };
 }
 

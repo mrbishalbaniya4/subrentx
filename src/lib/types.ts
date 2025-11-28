@@ -21,3 +21,15 @@ export interface Item {
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
+
+export type ActivityLogAction = 'created' | 'updated' | 'password_changed' | 'archived' | 'unarchived';
+
+export interface ActivityLog {
+  id: string;
+  userId: string;
+  itemId: string;
+  itemName: string;
+  action: ActivityLogAction;
+  details?: string;
+  timestamp: Timestamp;
+}

@@ -126,6 +126,45 @@
         "createdAt",
         "updatedAt"
       ]
+    },
+    "ActivityLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ActivityLog",
+      "type": "object",
+      "description": "Represents an activity log entry.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the log entry."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who performed the action."
+        },
+        "itemId": {
+          "type": "string",
+          "description": "The ID of the item that was affected."
+        },
+        "itemName": {
+          "type": "string",
+          "description": "The name of the item at the time of the action."
+        },
+        "action": {
+          "type": "string",
+          "description": "The type of action performed.",
+          "enum": ["created", "updated", "password_changed", "archived", "unarchived"]
+        },
+        "details": {
+          "type": "string",
+          "description": "A description of the change."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the action occurred.",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "userId", "itemId", "itemName", "action", "timestamp"]
     }
   },
   "auth": {
@@ -171,8 +210,28 @@
             }
           ]
         }
+      },
+      {
+        "path": "/users/{userId}/activity-logs/{logId}",
+        "definition": {
+          "entityName": "ActivityLog",
+          "schema": {
+            "$ref": "#/backend/entities/ActivityLog"
+          },
+          "description": "Stores activity logs for a user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user."
+            },
+            {
+              "name": "logId",
+              "description": "The unique ID of the log entry."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure secure and scalable data storage for VaultBox, focusing on authorization independence, clarity, and adherence to best practices.  It leverages path-based ownership and explicit data denormalization to avoid complex security rules that rely on `get()` calls.  \n\nThe structure uses the following patterns:\n\n*   **/users/{userId}**:  This collection stores user profiles. Access is restricted to the authenticated user (path-based ownership).\n*   **/users/{userId}/items/{itemId}**: Stores items owned by a specific user. Path-based ownership ensures only the user can access their items.\n\n**Authorization Independence:** The primary method to achieve Authorization Independence is through path-based ownership. Since each `Item` is stored within the `/users/{userId}/items/{itemId}` path, security rules can directly verify that `request.auth.uid == userId` without needing to `get()` any data from parent documents. This simplifies rules and enables atomic operations.\n\n**QAPs (Rules are not Filters):** The structure supports secure `list` operations because of path-based ownership. When listing items under `/users/{userId}/items`, rules can efficiently verify the user's ID against the `userId` path parameter, ensuring that only the user's own items are returned. This avoids needing to filter based on document data, which is an anti-pattern in Firestore security rules."
+    "reasoning": "The Firestore structure is designed to ensure secure and scalable data storage for VaultBox, focusing on authorization independence, clarity, and adherence to best practices.  It leverages path-based ownership and explicit data denormalization to avoid complex security rules that rely on `get()` calls.  \n\nThe structure uses the following patterns:\n\n*   **/users/{userId}**:  This collection stores user profiles. Access is restricted to the authenticated user (path-based ownership).\n*   **/users/{userId}/items/{itemId}**: Stores items owned by a specific user. Path-based ownership ensures only the user can access their items.\n*   **/users/{userId}/activity-logs/{logId}**: Stores activity logs for a specific user. Path-based ownership ensures only the user can access their own activity history.\n\n**Authorization Independence:** The primary method to achieve Authorization Independence is through path-based ownership. Since each `Item` is stored within the `/users/{userId}/items/{itemId}` path, security rules can directly verify that `request.auth.uid == userId` without needing to `get()` any data from parent documents. This simplifies rules and enables atomic operations.\n\n**QAPs (Rules are not Filters):** The structure supports secure `list` operations because of path-based ownership. When listing items under `/users/{userId}/items`, rules can efficiently verify the user's ID against the `userId` path parameter, ensuring that only the user's own items are returned. This avoids needing to filter based on document data, which is an anti-pattern in Firestore security rules."
   }
 }
