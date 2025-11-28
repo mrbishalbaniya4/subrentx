@@ -13,7 +13,6 @@ export interface Item {
   notes?: string;
   startDate?: string;
   endDate?: string;
-  reminderDate?: string;
   status: Status;
   category?: Category;
   contactName?: string;

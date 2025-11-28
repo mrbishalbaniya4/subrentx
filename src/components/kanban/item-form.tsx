@@ -37,7 +37,6 @@ const itemSchema = z.object({
   notes: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  reminderDate: z.string().optional(),
   status: z.enum(['Active', 'Sold Out', 'Expired', 'Archived']),
   category: z.enum(['Website', 'WhatsApp', 'Messenger', 'Other']).optional(),
   contactName: z.string().optional(),
@@ -69,9 +68,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           endDate: item.endDate
             ? format(new Date(item.endDate), "yyyy-MM-dd'T'HH:mm")
             : '',
-          reminderDate: item.reminderDate
-            ? format(new Date(item.reminderDate), "yyyy-MM-dd'T'HH:mm")
-            : '',
         }
       : {
           name: '',
@@ -81,7 +77,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           notes: '',
           startDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
           endDate: '',
-          reminderDate: '',
           status: 'Active',
           category: 'Website',
           contactName: '',
@@ -120,7 +115,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           ...values,
           startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
           endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
-          reminderDate: values.reminderDate ? new Date(values.reminderDate).toISOString() : '',
         };
         if (item) {
           await editItem(firestore, user.uid, { ...itemData, id: item.id });
@@ -298,19 +292,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
             )}
           />
         </div>
-         <FormField
-            control={form.control}
-            name="reminderDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Reminder Date</FormLabel>
-                <FormControl>
-                  <Input type="datetime-local" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         <div className="space-y-4 rounded-md border p-4">
           <h3 className="text-sm font-medium">Contact Details</h3>
           <FormField

@@ -89,11 +89,6 @@
           "description": "End date of the item.",
           "format": "date-time"
         },
-        "reminderDate": {
-          "type": "string",
-          "description": "Date for sending a reminder notification.",
-          "format": "date-time"
-        },
         "status": {
           "type": "string",
           "description": "Status of the item (Active, Sold Out, Expired).",
