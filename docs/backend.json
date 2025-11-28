@@ -94,6 +94,19 @@
           "description": "Status of the item (Active, Sold Out, Expired).",
           "format": "string"
         },
+        "category": {
+          "type": "string",
+          "description": "Category of the contact (e.g., Website, WhatsApp).",
+          "enum": ["Website", "WhatsApp", "Messenger", "Other"]
+        },
+        "contactName": {
+            "type": "string",
+            "description": "Name of the contact person."
+        },
+        "contactValue": {
+            "type": "string",
+            "description": "Value associated with the contact (e.g., URL, phone number)."
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp indicating when the item was created.",

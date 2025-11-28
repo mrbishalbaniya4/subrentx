@@ -12,6 +12,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Item } from '@/lib/types';
@@ -30,6 +37,9 @@ const itemSchema = z.object({
   expirationDate: z.string().optional(),
   reminderDate: z.string().optional(),
   status: z.enum(['Active', 'Sold Out', 'Expired', 'Archived']),
+  category: z.enum(['Website', 'WhatsApp', 'Messenger', 'Other']).optional(),
+  contactName: z.string().optional(),
+  contactValue: z.string().optional(),
 });
 
 type ItemFormValues = z.infer<typeof itemSchema>;
@@ -57,8 +67,26 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
       expirationDate: '',
       reminderDate: '',
       status: 'Active',
+      category: 'Website',
+      contactName: '',
+      contactValue: '',
     },
   });
+
+  const category = form.watch('category');
+
+  const getContactValuePlaceholder = () => {
+    switch (category) {
+      case 'WhatsApp':
+      case 'Messenger':
+        return 'Enter phone number';
+      case 'Website':
+        return 'Enter website URL';
+      default:
+        return 'Enter contact value';
+    }
+  };
+
 
   const onSubmit = (values: ItemFormValues) => {
     if (!firestore || !user) {
@@ -224,6 +252,61 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
             )}
           />
         </div>
+        <div className="space-y-4 rounded-md border p-4">
+          <h3 className="text-sm font-medium">Contact Details</h3>
+          <FormField
+            control={form.control}
+            name="category"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Category</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Website">Website</SelectItem>
+                    <SelectItem value="WhatsApp">WhatsApp</SelectItem>
+                    <SelectItem value="Messenger">Messenger</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="contactName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contact Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., John Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="contactValue"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Number / URL</FormLabel>
+                  <FormControl>
+                    <Input placeholder={getContactValuePlaceholder()} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
 
         <div className="flex items-center justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>

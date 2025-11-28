@@ -40,6 +40,9 @@ import {
   Trash2,
   FilePenLine,
   Loader2,
+  User,
+  Link as LinkIcon,
+  MessageSquare,
 } from 'lucide-react';
 import { archiveItem } from '@/app/items/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -48,14 +51,9 @@ import { useFirestore, useUser } from '@/firebase';
 interface KanbanCardProps {
   item: Item;
   isOverlay?: boolean;
-  isDragDisabled?: boolean;
 }
 
-export function KanbanCard({
-  item,
-  isOverlay,
-  isDragDisabled,
-}: KanbanCardProps) {
+export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -81,7 +79,7 @@ export function KanbanCard({
       type: 'item',
       item,
     },
-    disabled: isDragDisabled || !isClient,
+    disabled: !isClient,
   });
 
   const style = {
@@ -112,7 +110,18 @@ export function KanbanCard({
     });
   };
 
-  const cardAttributes = isClient ? attributes : {};
+  const getCategoryIcon = (category: string | undefined) => {
+    switch (category) {
+      case 'Website':
+        return <LinkIcon className="h-4 w-4" />;
+      case 'WhatsApp':
+        return <MessageSquare className="h-4 w-4" />; // Using generic message icon
+      case 'Messenger':
+        return <MessageSquare className="h-4 w-4" />; // Using generic message icon
+      default:
+        return <User className="h-4 w-4" />;
+    }
+  };
 
   return (
     <>
@@ -124,7 +133,7 @@ export function KanbanCard({
           isDragging && 'opacity-50',
           isOverlay && 'shadow-2xl'
         )}
-        {...cardAttributes}
+        {...(isClient ? attributes : {})}
       >
         <CardHeader className="relative flex-row items-start gap-4 space-y-0 p-4">
           <div
@@ -141,7 +150,7 @@ export function KanbanCard({
               {...listeners}
               className={cn(
                 'cursor-grab p-1 text-muted-foreground transition-opacity hover:opacity-80 group-hover:opacity-100 md:opacity-0',
-                isDragDisabled && 'cursor-not-allowed'
+                !isClient && 'cursor-not-allowed'
               )}
             >
               <GripVertical className="h-5 w-5" />
@@ -175,15 +184,23 @@ export function KanbanCard({
           </DropdownMenu>
         </CardHeader>
         <CardContent
-          className="p-4 pt-0"
+          className="space-y-2 p-4 pt-0"
           onClick={() => setIsDialogOpen(true)}
           role="button"
         >
           {item.username && (
-            <p className="text-sm text-muted-foreground">{item.username}</p>
+            <p className="truncate text-sm text-muted-foreground">{item.username}</p>
           )}
+
+          {item.contactName && (
+             <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {getCategoryIcon(item.category)}
+              <span className="truncate font-medium">{item.contactName}</span>
+            </div>
+          )}
+
           {item.expirationDate && (
-            <div className="mt-2 flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-2 text-sm">
               <CalendarClock className="h-4 w-4" />
               <span
                 className={cn(
