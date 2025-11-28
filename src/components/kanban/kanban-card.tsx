@@ -11,6 +11,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal
 } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -30,7 +34,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { ItemForm } from './item-form';
-import type { Item, Category } from '@/lib/types';
+import type { Item, Category, Status } from '@/lib/types';
 import { useState, useTransition, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { format, isPast, formatDistanceToNow } from 'date-fns';
@@ -46,8 +50,9 @@ import {
   Archive,
   CopyPlus,
   RefreshCcw,
+  ArrowRight,
 } from 'lucide-react';
-import { archiveItem, duplicateItem } from '@/firebase/firestore/mutations';
+import { archiveItem, duplicateItem, updateItemStatus } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser } from '@/firebase';
 
@@ -173,6 +178,25 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
       setIsCopied(false);
     }, 2000);
   };
+  
+  const handleStatusChange = (newStatus: Status) => {
+    if (!user || !firestore || item.status === newStatus) return;
+    startTransition(async () => {
+      try {
+        await updateItemStatus(firestore, user.uid, item.id, newStatus);
+        toast({
+          title: 'Item Moved',
+          description: `Item moved to ${newStatus}.`,
+        });
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to move item.',
+        });
+      }
+    });
+  };
 
   return (
     <>
@@ -227,6 +251,25 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                 <CopyPlus className="mr-2 h-4 w-4" />
                 <span>Duplicate</span>
               </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <ArrowRight className="mr-2 h-4 w-4" />
+                  <span>Move to</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    {(['Active', 'Sold Out', 'Expired', 'Archived'] as Status[]).map((status) => (
+                      <DropdownMenuItem
+                        key={status}
+                        disabled={item.status === status || isPending}
+                        onClick={() => handleStatusChange(status)}
+                      >
+                        {status}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
