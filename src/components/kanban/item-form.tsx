@@ -209,10 +209,15 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           />
         </div>
 
-        <Button type="submit" disabled={isPending} className="w-full">
-          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {item ? 'Save Changes' : 'Save Item'}
-        </Button>
+        <div className="flex items-center justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>
+                Cancel
+            </Button>
+            <Button type="submit" disabled={isPending}>
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {item ? 'Save Changes' : 'Save Item'}
+            </Button>
+        </div>
       </form>
     </Form>
   );
