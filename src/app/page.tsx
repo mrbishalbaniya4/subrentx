@@ -1,20 +1,33 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/header';
 import { KanbanBoard } from '@/components/kanban/kanban-board';
-import { getItems } from '@/app/items/actions';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { Item } from '@/lib/types';
+import { subDays } from 'date-fns';
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
-  // For now, we use the in-memory store.
-  // In a future step, we will replace this with Firestore.
-  const [items, setItems] = React.useState([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const firestore = useFirestore();
+
+  const itemsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    
+    // Prune items that have been archived for more than 30 days
+    const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
+
+    return query(
+      collection(firestore, 'users', user.uid, 'items'),
+      where('archivedAt', '<', thirtyDaysAgo)
+    );
+  }, [firestore, user]);
+
+  const { data: items, isLoading: areItemsLoading } = useCollection<Item>(itemsQuery);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -22,16 +35,9 @@ export default function Home() {
     }
   }, [isUserLoading, user, router]);
 
-  useEffect(() => {
-    if (user) {
-      getItems().then((data) => {
-        setItems(data);
-        setIsLoading(false);
-      });
-    }
-  }, [user]);
+  const isLoading = isUserLoading || areItemsLoading;
 
-  if (isUserLoading || !user || isLoading) {
+  if (isLoading || !user) {
     return (
       <div className="flex min-h-screen w-full flex-col bg-background">
         <Header />
@@ -57,7 +63,7 @@ export default function Home() {
     <div className="flex min-h-screen w-full flex-col bg-background">
       <Header />
       <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
-        <KanbanBoard initialItems={items} />
+        <KanbanBoard initialItems={items || []} />
       </main>
     </div>
   );

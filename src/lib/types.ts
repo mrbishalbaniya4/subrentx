@@ -1,7 +1,10 @@
+import type { Timestamp } from 'firebase/firestore';
+
 export type Status = 'Active' | 'Sold Out' | 'Expired' | 'Archived';
 
 export interface Item {
   id: string;
+  userId: string;
   name: string;
   username?: string;
   password?: string;
@@ -11,4 +14,6 @@ export interface Item {
   reminderDate?: string;
   status: Status;
   archivedAt?: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }

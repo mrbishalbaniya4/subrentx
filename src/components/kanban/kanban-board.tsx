@@ -16,9 +16,10 @@ import { useState, useEffect } from 'react';
 import { KanbanColumn } from './kanban-column';
 import { KanbanCard } from './kanban-card';
 import type { Item, Status } from '@/lib/types';
-import { updateItem } from '@/app/items/actions';
+import { editItem } from '@/app/items/actions';
 import { useToast } from '@/hooks/use-toast';
 import { isPast } from 'date-fns';
+import { useFirestore, useUser } from '@/firebase';
 
 const columns: { id: Status; title: string }[] = [
   { id: 'Active', title: 'Active' },
@@ -32,6 +33,12 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
   const [activeItem, setActiveItem] = useState<Item | null>(null);
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
+  const firestore = useFirestore();
+  const { user } = useUser();
+
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
 
   useEffect(() => {
     setIsClient(true);
@@ -39,6 +46,8 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
 
   useEffect(() => {
     const checkAndMoveExpiredItems = async () => {
+      if (!firestore || !user) return;
+
       const today = new Date().toISOString().split('T')[0];
       const itemsToMove = items.filter(
         item =>
@@ -54,16 +63,11 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
           description: `${itemsToMove.length} item(s) moved to Expired.`,
         });
 
-        const updatedItems = items.map(item =>
-          itemsToMove.find(itm => itm.id === item.id)
-            ? { ...item, status: 'Expired' as Status }
-            : item
-        );
-        setItems(updatedItems);
-
         // Persist changes in the background
         await Promise.all(
-          itemsToMove.map(item => updateItem({ ...item, status: 'Expired' }))
+          itemsToMove.map(item =>
+            editItem(firestore, user.uid, { ...item, status: 'Expired' })
+          )
         );
       }
     };
@@ -72,7 +76,7 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
     // We only want this to run once on mount for the initial check.
     // Subsequent updates will be handled by user actions or page reloads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [firestore, user]); // Rerun when firestore/user is available
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -138,7 +142,7 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
     const { active, over } = event;
     setActiveItem(null);
 
-    if (!over) return;
+    if (!over || !firestore || !user) return;
     const activeId = String(active.id);
     const overId = String(over.id);
 
@@ -157,26 +161,17 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
       }
     }
 
-    if (!targetStatus) return;
+    if (!targetStatus || activeItem.status === targetStatus) return;
 
-    // optimistic update
-    const previousItems = [...items];
-    
-    const updatedItem = { ...activeItem, status: targetStatus };
-    if (targetStatus === 'Archived' && !activeItem.archivedAt) {
-      updatedItem.archivedAt = new Date().toISOString();
-    }
-
-    const updatedItems = items.map(item =>
-        item.id === activeId ? updatedItem : item
-    );
-    setItems(updatedItems);
-    
     // Server update
     try {
-        await updateItem(updatedItem);
+        const updatedItem = { ...activeItem, status: targetStatus };
+        if (targetStatus === 'Archived' && !activeItem.archivedAt) {
+          updatedItem.archivedAt = new Date().toISOString();
+        }
+        await editItem(firestore, user.uid, updatedItem);
     } catch (error) {
-        setItems(previousItems); // rollback on error
+        // The UI will revert automatically due to Firestore's real-time updates failing.
         toast({
             variant: "destructive",
             title: "Error",

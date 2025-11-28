@@ -1,65 +1,67 @@
 'use server';
 
 import { suggestExpirationDate } from '@/ai/flows/suggest-expiration-date';
-import { initialData } from '@/lib/data';
 import type { Item } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
-import { subDays } from 'date-fns';
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  updateDoc,
+  doc,
+  serverTimestamp,
+} from 'firebase/firestore';
+import { initializeFirebase } from '@/firebase';
 
-// In-memory store for demonstration purposes.
-let items: Item[] = [...initialData];
+// NOTE: These functions are now designed to be called from client components
+// that have access to Firestore and the user's ID.
 
-// Simulate database latency
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-export async function getItems(): Promise<Item[]> {
-  await sleep(500);
-  // Prune items that have been archived for more than 30 days
-  const thirtyDaysAgo = subDays(new Date(), 30);
-  const unprunedItems = items.filter(item => {
-    if (item.status === 'Archived' && item.archivedAt) {
-      return new Date(item.archivedAt) > thirtyDaysAgo;
-    }
-    return true;
+export async function createItem(
+  db: ReturnType<typeof getFirestore>,
+  userId: string,
+  item: Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+) {
+  const itemsCollection = collection(db, 'users', userId, 'items');
+  const newItem = await addDoc(itemsCollection, {
+    ...item,
+    userId: userId,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   });
-  if (unprunedItems.length < items.length) {
-    items = unprunedItems;
-    revalidatePath('/');
-  }
-  
-  return JSON.parse(JSON.stringify(items));
-}
-
-export async function addItem(item: Omit<Item, 'id' | 'archivedAt'>): Promise<Item> {
-  await sleep(500);
-  const newItem = { ...item, id: crypto.randomUUID() };
-  items.push(newItem);
   revalidatePath('/');
-  return newItem;
+  return { ...item, id: newItem.id, userId };
 }
 
-export async function updateItem(updatedItem: Item): Promise<Item> {
-  await sleep(500);
-  const index = items.findIndex(item => item.id === updatedItem.id);
-  if (index === -1) {
-    throw new Error('Item not found');
-  }
-  items[index] = updatedItem;
+export async function editItem(
+  db: ReturnType<typeof getFirestore>,
+  userId: string,
+  item: Omit<Item, 'createdAt' | 'updatedAt' | 'userId'>
+) {
+  const itemRef = doc(db, 'users', userId, 'items', item.id);
+  await updateDoc(itemRef, {
+    ...item,
+    updatedAt: serverTimestamp(),
+  });
   revalidatePath('/');
-  return updatedItem;
+  return { ...item, userId };
 }
 
-export async function deleteItem(id: string): Promise<{ success: boolean }> {
-  await sleep(500);
-  const index = items.findIndex(item => item.id === id);
-  if (index > -1) {
-    items[index].status = 'Archived';
-    items[index].archivedAt = new Date().toISOString();
-  }
+export async function archiveItem(
+  db: ReturnType<typeof getFirestore>,
+  userId: string,
+  itemId: string
+) {
+  const itemRef = doc(db, 'users', userId, 'items', itemId);
+  await updateDoc(itemRef, {
+    status: 'Archived',
+    archivedAt: new Date().toISOString(),
+    updatedAt: serverTimestamp(),
+  });
   revalidatePath('/');
   return { success: true };
 }
 
+// This action can remain a server action as it doesn't depend on user context directly.
 export async function suggestDateAction(itemDescription: string): Promise<{
   suggestedDate?: string;
   error?: string;

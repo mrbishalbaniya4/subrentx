@@ -41,8 +41,9 @@ import {
   FilePenLine,
   Loader2,
 } from 'lucide-react';
-import { deleteItem } from '@/app/items/actions';
+import { archiveItem } from '@/app/items/actions';
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore, useUser } from '@/firebase';
 
 interface KanbanCardProps {
   item: Item;
@@ -60,6 +61,8 @@ export function KanbanCard({
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
+  const firestore = useFirestore();
+  const { user } = useUser();
 
   useEffect(() => {
     setIsClient(true);
@@ -90,19 +93,20 @@ export function KanbanCard({
     item.expirationDate && isPast(new Date(item.expirationDate));
 
   const handleDelete = () => {
+    if (!firestore || !user) return;
     startTransition(async () => {
       try {
-        await deleteItem(item.id);
+        await archiveItem(firestore, user.uid, item.id);
         toast({
           title: 'Success',
-          description: 'Item deleted successfully.',
+          description: 'Item moved to Archived.',
         });
         setIsDeleteDialogOpen(false);
       } catch (error) {
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Failed to delete item.',
+          description: 'Failed to archive item.',
         });
       }
     });
@@ -214,8 +218,7 @@ export function KanbanCard({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              item "{item.name}".
+              This will move the item "{item.name}" to the Archived column. You can restore it from there.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -226,7 +229,7 @@ export function KanbanCard({
               className="bg-destructive hover:bg-destructive/90"
             >
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete
+              Archive
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
