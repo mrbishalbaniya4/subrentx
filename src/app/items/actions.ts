@@ -198,9 +198,9 @@ export async function generatePasswordAction(): Promise<{
 }> {
   try {
     const result = await generatePassword({
-      length: 16,
+      length: 6,
       includeNumbers: true,
-      includeSymbols: true,
+      includeSymbols: false,
     });
     return { password: result.password };
   } catch (e) {

@@ -30,20 +30,6 @@ export async function generatePassword(
   return generatePasswordFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'generatePasswordPrompt',
-  input: {schema: GeneratePasswordInputSchema},
-  output: {schema: GeneratePasswordOutputSchema},
-  prompt: `You are an expert password generator. Create a single, strong, random password based on the following criteria. Only return the password and nothing else.
-
-- Length: {{{length}}} characters.
-- Include Numbers: {{{includeNumbers}}}.
-- Include Symbols: {{{includeSymbols}}}.
-- Must include a mix of uppercase and lowercase letters.
-`,
-});
-
-
 const generatePasswordFlow = ai.defineFlow(
   {
     name: 'generatePasswordFlow',
@@ -51,40 +37,19 @@ const generatePasswordFlow = ai.defineFlow(
     outputSchema: GeneratePasswordOutputSchema,
   },
   async input => {
-    // For simple generation, we can bypass a complex prompt and just generate it.
-    // This is more reliable and faster than prompting an LLM.
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const numbers = '0123456789';
-    const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
 
     let availableChars = chars;
-    if (input.includeNumbers) availableChars += numbers;
-    if (input.includeSymbols) availableChars += symbols;
-
+    if (input.includeNumbers) {
+        availableChars += numbers;
+    }
+    
     let password = '';
     for (let i = 0; i < input.length; i++) {
         password += availableChars.charAt(Math.floor(Math.random() * availableChars.length));
     }
     
-    // Ensure all required character types are present
-    let passwordChars = password.split('');
-    if (input.includeNumbers && !/\d/.test(password)) {
-        passwordChars[0] = numbers.charAt(Math.floor(Math.random() * numbers.length));
-    }
-    if (input.includeSymbols && !/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)) {
-        passwordChars[1] = symbols.charAt(Math.floor(Math.random() * symbols.length));
-    }
-    if (!/[A-Z]/.test(password)) {
-        passwordChars[2] = chars.charAt(Math.floor(Math.random() * 26));
-    }
-     if (!/[a-z]/.test(password)) {
-        passwordChars[3] = chars.charAt(Math.floor(Math.random() * 26) + 26);
-    }
-    
-    // Shuffle to ensure randomness
-    password = passwordChars.sort(() => 0.5 - Math.random()).join('');
-
-
     return { password };
   }
 );
