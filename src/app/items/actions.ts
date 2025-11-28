@@ -10,6 +10,7 @@ import {
   updateDoc,
   doc,
   serverTimestamp,
+  Timestamp,
 } from 'firebase/firestore';
 
 // This is a new type that represents the data coming from the form,
@@ -24,11 +25,9 @@ export async function createItem(
   db: ReturnType<typeof getFirestore>,
   userId: string,
   itemData: Omit<ItemFormData, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'status'>
-) {
+): Promise<Item> {
   const itemsCollection = collection(db, 'users', userId, 'items');
 
-  // The data from the form (itemData) is now saved directly.
-  // The date strings are passed as-is.
   const dataToSave = {
     ...itemData,
     userId: userId,
@@ -40,19 +39,23 @@ export async function createItem(
   const newItemRef = await addDoc(itemsCollection, dataToSave);
   revalidatePath('/');
   
-  // We don't have the final Timestamps here, but can return the string versions for optimistic updates
-  return { ...dataToSave, id: newItemRef.id };
+  // Return a complete Item object with placeholder Timestamps for optimistic updates
+  const now = Timestamp.now();
+  return { 
+    ...dataToSave,
+    id: newItemRef.id,
+    createdAt: now,
+    updatedAt: now,
+  } as Item;
 }
 
 export async function editItem(
   db: ReturnType<typeof getFirestore>,
   userId: string,
   itemData: Omit<Item, 'createdAt' | 'updatedAt' | 'userId'>
-) {
+): Promise<Item> {
   const itemRef = doc(db, 'users', userId, 'items', itemData.id);
   
-  // The data from the form (itemData) is now saved directly.
-  // The date strings are passed as-is.
   const dataToSave = {
     ...itemData,
     updatedAt: serverTimestamp(),
@@ -60,7 +63,14 @@ export async function editItem(
 
   await updateDoc(itemRef, dataToSave);
   revalidatePath('/');
-  return { ...dataToSave, userId };
+
+  // Return a complete item with a new updated timestamp for optimistic updates
+  return { 
+    ...dataToSave, 
+    userId,
+    createdAt: new Timestamp(itemData.createdAt.seconds, itemData.createdAt.nanoseconds), // Preserve original creation date
+    updatedAt: Timestamp.now()
+  };
 }
 
 export async function archiveItem(
