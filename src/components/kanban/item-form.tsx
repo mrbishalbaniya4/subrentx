@@ -113,8 +113,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
       try {
         const itemData = {
           ...values,
-          startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
-          endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
         };
 
         if (item) {

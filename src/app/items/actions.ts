@@ -11,40 +11,58 @@ import {
   doc,
   serverTimestamp,
 } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase';
 
-// NOTE: These functions are now designed to be called from client components
-// that have access to Firestore and the user's ID.
+// This is a new type that represents the data coming from the form,
+// where dates are still strings.
+type ItemFormData = Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'status'> & {
+  startDate?: string;
+  endDate?: string;
+};
+
 
 export async function createItem(
   db: ReturnType<typeof getFirestore>,
   userId: string,
-  item: Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'status'>
+  itemData: Omit<ItemFormData, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'status'>
 ) {
   const itemsCollection = collection(db, 'users', userId, 'items');
-  const newItem = await addDoc(itemsCollection, {
-    ...item,
+
+  // Convert date strings to ISO strings only if they exist
+  const dataToSave = {
+    ...itemData,
+    startDate: itemData.startDate ? new Date(itemData.startDate).toISOString() : '',
+    endDate: itemData.endDate ? new Date(itemData.endDate).toISOString() : '',
     userId: userId,
     status: 'Active', // New items are always active
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-  });
+  };
+
+  const newItemRef = await addDoc(itemsCollection, dataToSave);
   revalidatePath('/');
-  return { ...item, id: newItem.id, userId, status: 'Active' };
+  
+  // We don't have the final Timestamps here, but can return the string versions for optimistic updates
+  return { ...dataToSave, id: newItemRef.id };
 }
 
 export async function editItem(
   db: ReturnType<typeof getFirestore>,
   userId: string,
-  item: Omit<Item, 'createdAt' | 'updatedAt' | 'userId'>
+  itemData: Omit<Item, 'createdAt' | 'updatedAt' | 'userId'>
 ) {
-  const itemRef = doc(db, 'users', userId, 'items', item.id);
-  await updateDoc(itemRef, {
-    ...item,
+  const itemRef = doc(db, 'users', userId, 'items', itemData.id);
+  
+  // Convert date strings to ISO strings only if they exist
+  const dataToSave = {
+    ...itemData,
+    startDate: itemData.startDate ? new Date(itemData.startDate).toISOString() : '',
+    endDate: itemData.endDate ? new Date(itemData.endDate).toISOString() : '',
     updatedAt: serverTimestamp(),
-  });
+  };
+
+  await updateDoc(itemRef, dataToSave);
   revalidatePath('/');
-  return { ...item, userId };
+  return { ...dataToSave, userId };
 }
 
 export async function archiveItem(
