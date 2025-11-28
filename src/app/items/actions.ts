@@ -27,11 +27,10 @@ export async function createItem(
 ) {
   const itemsCollection = collection(db, 'users', userId, 'items');
 
-  // Convert date strings to ISO strings only if they exist
+  // The data from the form (itemData) is now saved directly.
+  // The date strings are passed as-is.
   const dataToSave = {
     ...itemData,
-    startDate: itemData.startDate ? new Date(itemData.startDate).toISOString() : '',
-    endDate: itemData.endDate ? new Date(itemData.endDate).toISOString() : '',
     userId: userId,
     status: 'Active', // New items are always active
     createdAt: serverTimestamp(),
@@ -52,11 +51,10 @@ export async function editItem(
 ) {
   const itemRef = doc(db, 'users', userId, 'items', itemData.id);
   
-  // Convert date strings to ISO strings only if they exist
+  // The data from the form (itemData) is now saved directly.
+  // The date strings are passed as-is.
   const dataToSave = {
     ...itemData,
-    startDate: itemData.startDate ? new Date(itemData.startDate).toISOString() : '',
-    endDate: itemData.endDate ? new Date(itemData.endDate).toISOString() : '',
     updatedAt: serverTimestamp(),
   };
 
