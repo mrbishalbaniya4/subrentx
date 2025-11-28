@@ -35,7 +35,8 @@ const itemSchema = z.object({
   password: z.string().optional(),
   pin: z.string().optional(),
   notes: z.string().optional(),
-  expirationDate: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
   reminderDate: z.string().optional(),
   status: z.enum(['Active', 'Sold Out', 'Expired', 'Archived']),
   category: z.enum(['Website', 'WhatsApp', 'Messenger', 'Other']).optional(),
@@ -62,8 +63,11 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
     defaultValues: item
       ? {
           ...item,
-          expirationDate: item.expirationDate
-            ? format(new Date(item.expirationDate), "yyyy-MM-dd'T'HH:mm")
+          startDate: item.startDate
+            ? format(new Date(item.startDate), "yyyy-MM-dd'T'HH:mm")
+            : '',
+          endDate: item.endDate
+            ? format(new Date(item.endDate), "yyyy-MM-dd'T'HH:mm")
             : '',
           reminderDate: item.reminderDate
             ? format(new Date(item.reminderDate), "yyyy-MM-dd'T'HH:mm")
@@ -75,7 +79,8 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           password: '',
           pin: '',
           notes: '',
-          expirationDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+          startDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+          endDate: '',
           reminderDate: '',
           status: 'Active',
           category: 'Website',
@@ -113,7 +118,8 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
       try {
         const itemData = {
           ...values,
-          expirationDate: values.expirationDate ? new Date(values.expirationDate).toISOString() : '',
+          startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
+          endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
           reminderDate: values.reminderDate ? new Date(values.reminderDate).toISOString() : '',
         };
         if (item) {
@@ -148,15 +154,15 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
       const result = await suggestDateAction(itemName);
       if (result.suggestedDate) {
         // The suggested date is YYYY-MM-DD, we'll keep the current time or default to 00:00
-        const currentDate = form.getValues('expirationDate') ? new Date(form.getValues('expirationDate')!) : new Date();
+        const currentDate = form.getValues('endDate') ? new Date(form.getValues('endDate')!) : new Date();
         const time = format(currentDate, 'HH:mm');
         const suggestedDateTime = `${result.suggestedDate}T${time}`;
-        form.setValue('expirationDate', suggestedDateTime, {
+        form.setValue('endDate', suggestedDateTime, {
           shouldValidate: true,
         });
         toast({
           title: 'Date Suggested',
-          description: `Expiration date set to ${format(new Date(suggestedDateTime), 'MMM d, yyyy HH:mm')}`,
+          description: `End date set to ${format(new Date(suggestedDateTime), 'MMM d, yyyy HH:mm')}`,
         });
       } else if (result.error) {
         toast({
@@ -169,9 +175,9 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
     });
   };
 
-  const setExpirationInDays = (days: number) => {
-    const newExpirationDate = addDays(new Date(), days);
-    form.setValue('expirationDate', format(newExpirationDate, "yyyy-MM-dd'T'HH:mm"), {
+  const setEndDateInDays = (days: number) => {
+    const newEndDate = addDays(new Date(), days);
+    form.setValue('endDate', format(newEndDate, "yyyy-MM-dd'T'HH:mm"), {
       shouldValidate: true,
     });
   };
@@ -234,12 +240,25 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           )}
         />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField
+           <FormField
             control={form.control}
-            name="expirationDate"
+            name="startDate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Expiration Date</FormLabel>
+                <FormLabel>Start Date</FormLabel>
+                <FormControl>
+                  <Input type="datetime-local" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="endDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>End Date</FormLabel>
                 <div className="relative">
                   <FormControl>
                     <Input type="datetime-local" {...field} />
@@ -251,7 +270,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                     className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-accent"
                     onClick={handleSuggestDate}
                     disabled={isSuggesting}
-                    aria-label="Suggest Expiration Date"
+                    aria-label="Suggest End Date"
                   >
                     {isSuggesting ? (
                       <Loader2 className="animate-spin" />
@@ -268,7 +287,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setExpirationInDays(days)}
+                      onClick={() => setEndDateInDays(days)}
                       className="text-xs"
                     >
                       {days}d
@@ -278,7 +297,8 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
               </FormItem>
             )}
           />
-          <FormField
+        </div>
+         <FormField
             control={form.control}
             name="reminderDate"
             render={({ field }) => (
@@ -291,7 +311,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
               </FormItem>
             )}
           />
-        </div>
         <div className="space-y-4 rounded-md border p-4">
           <h3 className="text-sm font-medium">Contact Details</h3>
           <FormField

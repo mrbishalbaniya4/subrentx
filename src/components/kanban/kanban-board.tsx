@@ -51,8 +51,8 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
       const today = new Date().toISOString().split('T')[0];
       const itemsToMove = items.filter(
         item =>
-          item.expirationDate &&
-          isPast(new Date(item.expirationDate)) &&
+          item.endDate &&
+          isPast(new Date(item.endDate)) &&
           item.status !== 'Expired' &&
           item.status !== 'Archived'
       );

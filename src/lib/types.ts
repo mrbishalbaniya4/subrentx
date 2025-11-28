@@ -11,7 +11,8 @@ export interface Item {
   password?: string;
   pin?: string;
   notes?: string;
-  expirationDate?: string;
+  startDate?: string;
+  endDate?: string;
   reminderDate?: string;
   status: Status;
   category?: Category;

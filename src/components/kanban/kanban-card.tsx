@@ -88,10 +88,10 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
   };
 
   const isExpired =
-    item.expirationDate && isPast(new Date(item.expirationDate));
+    item.endDate && isPast(new Date(item.endDate));
   
-  const formattedExpirationDate = item.expirationDate
-    ? format(new Date(item.expirationDate), 'MMM d, yyyy HH:mm')
+  const formattedEndDate = item.endDate
+    ? format(new Date(item.endDate), 'MMM d, yyyy HH:mm')
     : null;
 
 
@@ -204,7 +204,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
             </div>
           )}
 
-          {formattedExpirationDate && (
+          {formattedEndDate && (
             <div className="flex items-center gap-2 text-sm">
               <CalendarClock className="h-4 w-4" />
               <span
@@ -213,7 +213,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                   isExpired ? 'text-destructive' : 'text-muted-foreground'
                 )}
               >
-                {formattedExpirationDate}
+                {formattedEndDate}
               </span>
             </div>
           )}
