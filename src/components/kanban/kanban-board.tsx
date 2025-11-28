@@ -48,7 +48,6 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
     const checkAndMoveExpiredItems = async () => {
       if (!firestore || !user) return;
 
-      const today = new Date().toISOString().split('T')[0];
       const itemsToMove = items.filter(
         item =>
           item.endDate &&
@@ -64,19 +63,27 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
         });
 
         // Persist changes in the background
-        await Promise.all(
-          itemsToMove.map(item =>
-            editItem(firestore, user.uid, { ...item, status: 'Expired' })
-          )
+        const updates = itemsToMove.map(item =>
+          editItem(firestore, user.uid, { ...item, status: 'Expired' })
         );
+        
+        try {
+          await Promise.all(updates);
+        } catch (error) {
+          console.error("Error auto-updating items to expired:", error);
+          toast({
+            variant: "destructive",
+            title: "Auto-Update Failed",
+            description: "Could not move expired items automatically."
+          })
+        }
       }
     };
 
-    checkAndMoveExpiredItems();
-    // We only want this to run once on mount for the initial check.
-    // Subsequent updates will be handled by user actions or page reloads.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firestore, user]); // Rerun when firestore/user is available
+    if (items.length > 0) {
+        checkAndMoveExpiredItems();
+    }
+  }, [items, firestore, user, toast]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
