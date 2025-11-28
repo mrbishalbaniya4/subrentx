@@ -89,6 +89,11 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
 
   const isExpired =
     item.expirationDate && isPast(new Date(item.expirationDate));
+  
+  const formattedExpirationDate = item.expirationDate
+    ? format(new Date(item.expirationDate), 'MMM d, yyyy')
+    : null;
+
 
   const handleDelete = () => {
     if (!firestore || !user) return;
@@ -199,7 +204,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
             </div>
           )}
 
-          {item.expirationDate && (
+          {formattedExpirationDate && (
             <div className="flex items-center gap-2 text-sm">
               <CalendarClock className="h-4 w-4" />
               <span
@@ -208,7 +213,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                   isExpired ? 'text-destructive' : 'text-muted-foreground'
                 )}
               >
-                {format(new Date(item.expirationDate), 'MMM d, yyyy')}
+                {formattedExpirationDate}
               </span>
             </div>
           )}

@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, WandSparkles } from 'lucide-react';
 import { useState, useTransition } from 'react';
 import { useFirestore, useUser } from '@/firebase';
+import { format } from 'date-fns';
 
 const itemSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -58,19 +59,29 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
 
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
-    defaultValues: item || {
-      name: '',
-      username: '',
-      password: '',
-      pin: '',
-      notes: '',
-      expirationDate: '',
-      reminderDate: '',
-      status: 'Active',
-      category: 'Website',
-      contactName: '',
-      contactValue: '',
-    },
+    defaultValues: item
+      ? {
+          ...item,
+          expirationDate: item.expirationDate
+            ? format(new Date(item.expirationDate), 'yyyy-MM-dd')
+            : '',
+          reminderDate: item.reminderDate
+            ? format(new Date(item.reminderDate), 'yyyy-MM-dd')
+            : '',
+        }
+      : {
+          name: '',
+          username: '',
+          password: '',
+          pin: '',
+          notes: '',
+          expirationDate: new Date().toISOString().split('T')[0],
+          reminderDate: '',
+          status: 'Active',
+          category: 'Website',
+          contactName: '',
+          contactValue: '',
+        },
   });
 
   const category = form.watch('category');
