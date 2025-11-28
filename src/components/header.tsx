@@ -1,6 +1,5 @@
 import { AddItemButton } from '@/components/kanban/add-item-button';
 import { VaultboxLogo } from '@/components/icons/vaultbox-logo';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { UserNav } from '@/components/user-nav';
 import { useUser } from '@/firebase';
 import { Input } from '@/components/ui/input';
@@ -106,7 +105,6 @@ export function Header({
 
         <div className="ml-auto hidden items-center gap-2 md:flex">
           <UserNav />
-          <ThemeToggle />
         </div>
       </header>
 
@@ -114,7 +112,6 @@ export function Header({
         {user && <AddItemButton />}
         <div className="flex gap-3 md:hidden">
             <UserNav />
-            <ThemeToggle />
         </div>
       </div>
     </>
