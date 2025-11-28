@@ -91,7 +91,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     item.expirationDate && isPast(new Date(item.expirationDate));
   
   const formattedExpirationDate = item.expirationDate
-    ? format(new Date(item.expirationDate), 'MMM d, yyyy')
+    ? format(new Date(item.expirationDate), 'MMM d, yyyy HH:mm')
     : null;
 
 
