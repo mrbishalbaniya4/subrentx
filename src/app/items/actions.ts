@@ -11,11 +11,12 @@ import {
   doc,
   serverTimestamp,
   Timestamp,
+  getDoc,
 } from 'firebase/firestore';
 
 // This is a new type that represents the data coming from the form,
 // where dates are still strings.
-type ItemFormData = Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'userId'> & {
+type ItemFormData = Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'status'> & {
   startDate?: string;
   endDate?: string;
 };
@@ -28,8 +29,6 @@ export async function createItem(
 ): Promise<Item> {
   const itemsCollection = collection(db, 'users', userId, 'items');
 
-  // Construct the object to save to Firestore.
-  // New items are always 'Active'.
   const dataToSave = {
     ...itemData,
     userId: userId,
@@ -41,10 +40,9 @@ export async function createItem(
   const newItemRef = await addDoc(itemsCollection, dataToSave);
   revalidatePath('/');
   
-  // Return a complete Item object with placeholder Timestamps for optimistic updates
   const now = Timestamp.now();
   return { 
-    ...itemData, // The original form data
+    ...itemData,
     id: newItemRef.id,
     userId: userId,
     status: 'Active',
@@ -69,18 +67,16 @@ export async function editItem(
   await updateDoc(itemRef, dataToSave);
   revalidatePath('/');
 
-  // Re-fetch the original item to get the correct createdAt timestamp
-  // This is a simplified approach; in a real app, you might pass createdAt from the client
-  // but this ensures consistency.
-  const now = Timestamp.now();
-  const created = (itemData as Item).createdAt || now;
+  const docSnap = await getDoc(itemRef);
+  const existingData = docSnap.data() as Item | undefined;
 
   return { 
     id: itemId,
     ...dataToSave, 
     userId,
-    createdAt: created,
-    updatedAt: now,
+    // Ensure we return valid Timestamps, not JS Date objects or strings
+    createdAt: existingData?.createdAt || Timestamp.now(),
+    updatedAt: Timestamp.now(), // Optimistic update with a real timestamp
   } as Item;
 }
 
@@ -99,7 +95,6 @@ export async function archiveItem(
   return { success: true };
 }
 
-// This action can remain a server action as it doesn't depend on user context directly.
 export async function suggestDateAction(itemDescription: string): Promise<{
   suggestedDate?: string;
   error?: string;
