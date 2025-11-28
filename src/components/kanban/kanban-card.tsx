@@ -43,8 +43,12 @@ import {
   User,
   Link as LinkIcon,
   MessageSquare,
+  Copy,
+  CopyCheck,
+  Archive,
+  CopyPlus,
 } from 'lucide-react';
-import { archiveItem } from '@/app/items/actions';
+import { archiveItem, duplicateItem } from '@/app/items/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser } from '@/firebase';
 
@@ -56,6 +60,8 @@ interface KanbanCardProps {
 export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isPasswordRevealed, setIsPasswordRevealed] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -94,8 +100,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     ? format(new Date(item.endDate), 'MMM d, yyyy HH:mm')
     : null;
 
-
-  const handleDelete = () => {
+  const handleArchive = () => {
     if (!firestore || !user) return;
     startTransition(async () => {
       try {
@@ -115,14 +120,49 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     });
   };
 
+  const handleDuplicate = () => {
+    if (!firestore || !user) return;
+    startTransition(async () => {
+      try {
+        await duplicateItem(firestore, user.uid, item.id);
+        toast({
+          title: 'Success',
+          description: 'Item duplicated successfully.',
+        });
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to duplicate item.',
+        });
+      }
+    });
+  };
+
+  const handleCopyPassword = () => {
+    if (!item.password) return;
+    navigator.clipboard.writeText(item.password);
+    setIsPasswordRevealed(true);
+    setIsCopied(true);
+    toast({ title: 'Password Copied' });
+
+    setTimeout(() => {
+      setIsPasswordRevealed(false);
+    }, 5000);
+
+    setTimeout(() => {
+      setIsCopied(false);
+    }, 2000);
+  };
+
   const getCategoryIcon = (category: string | undefined) => {
     switch (category) {
       case 'Website':
         return <LinkIcon className="h-4 w-4" />;
       case 'WhatsApp':
-        return <MessageSquare className="h-4 w-4" />; // Using generic message icon
+        return <MessageSquare className="h-4 w-4" />;
       case 'Messenger':
-        return <MessageSquare className="h-4 w-4" />; // Using generic message icon
+        return <MessageSquare className="h-4 w-4" />;
       default:
         return <User className="h-4 w-4" />;
     }
@@ -140,7 +180,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
         )}
         {...(isClient ? attributes : {})}
       >
-        <CardHeader className="relative flex-row items-start gap-4 space-y-0 p-4">
+        <CardHeader className="relative flex-row items-start gap-4 space-y-0 p-4 pb-2">
           <div
             className="flex-1 space-y-1"
             onClick={() => setIsDialogOpen(true)}
@@ -177,25 +217,58 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                 <FilePenLine className="mr-2 h-4 w-4" />
                 <span>Edit</span>
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDuplicate} disabled={isPending}>
+                <CopyPlus className="mr-2 h-4 w-4" />
+                <span>Duplicate</span>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                className="text-destructive"
+                className="text-destructive focus:text-destructive"
                 onClick={() => setIsDeleteDialogOpen(true)}
               >
-                <Trash2 className="mr-2 h-4 w-4" />
-                <span>Delete</span>
+                <Archive className="mr-2 h-4 w-4" />
+                <span>Archive</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </CardHeader>
         <CardContent
-          className="space-y-2 p-4 pt-0"
+          className="space-y-3 p-4 pt-0"
           onClick={() => setIsDialogOpen(true)}
           role="button"
         >
           {item.username && (
             <p className="truncate text-sm text-muted-foreground">{item.username}</p>
           )}
+
+          {item.password && (
+            <div className="flex items-center gap-2">
+              <input
+                type={isPasswordRevealed ? 'text' : 'password'}
+                readOnly
+                value={item.password}
+                className="pointer-events-none w-full flex-1 truncate border-none bg-transparent p-0 text-sm font-mono text-muted-foreground focus:ring-0"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="z-10 h-7 w-7 shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCopyPassword();
+                }}
+              >
+                {isCopied ? (
+                  <CopyCheck className="h-4 w-4 text-primary" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+                <span className="sr-only">Copy Password</span>
+              </Button>
+            </div>
+          )}
+
 
           {item.contactName && (
              <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -246,7 +319,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={handleArchive}
               disabled={isPending}
               className="bg-destructive hover:bg-destructive/90"
             >

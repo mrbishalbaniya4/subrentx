@@ -28,7 +28,8 @@ export async function createItem(
 ): Promise<Item> {
   const itemsCollection = collection(db, 'users', userId, 'items');
 
-  const dataToSave = {
+  // Remove id if it exists, as it's not needed for creation
+  const { id, ...dataToSave } = {
     ...itemData,
     userId: userId,
     status: 'Active',
@@ -39,6 +40,8 @@ export async function createItem(
   const newItemRef = await addDoc(itemsCollection, dataToSave);
   
   const now = Timestamp.now();
+  // We can't just spread dataToSave because createdAt/updatedAt are server values.
+  // We return an optimistic response with client-generated timestamps.
   return { 
     ...itemData,
     id: newItemRef.id,
@@ -52,7 +55,7 @@ export async function createItem(
 export async function editItem(
   db: ReturnType<typeof getFirestore>,
   userId: string,
-  itemData: Omit<Item, 'createdAt' | 'updatedAt' | 'userId'>
+  itemData: Omit<Item, 'createdAt' | 'updatedAt'> & { createdAt?: Timestamp }
 ): Promise<Item> {
   const { id: itemId, ...dataToUpdate } = itemData;
   const itemRef = doc(db, 'users', userId, 'items', itemId);
@@ -64,19 +67,48 @@ export async function editItem(
 
   await updateDoc(itemRef, dataToSave);
 
-  const docSnap = await getDoc(itemRef);
-  const existingData = docSnap.data();
-
-  // Create a serializable Item object for the client.
-  // The key is to convert Timestamps to something the client can handle, like ISO strings,
-  // but since we are re-fetching with onSnapshot, we can just return a consistent object.
+  const now = Timestamp.now();
+  // Ensure createdAt is carried over correctly, falling back to a new timestamp if it's missing.
+  // The client-side state will be updated by the real-time listener anyway.
   return {
-    id: itemId,
-    userId: userId,
-    ...dataToUpdate,
-    createdAt: existingData?.createdAt || Timestamp.now(), // Ensure createdAt is a Timestamp
-    updatedAt: Timestamp.now(), // Optimistic update with a new Timestamp
+    ...itemData,
+    createdAt: itemData.createdAt || now, // Preserve original createdAt
+    updatedAt: now, // Optimistic update
   } as Item;
+}
+
+export async function duplicateItem(
+  db: ReturnType<typeof getFirestore>,
+  userId: string,
+  itemId: string
+): Promise<Item> {
+  const itemRef = doc(db, 'users', userId, 'items', itemId);
+  const docSnap = await getDoc(itemRef);
+
+  if (!docSnap.exists()) {
+    throw new Error('Item not found');
+  }
+
+  const originalItem = docSnap.data() as Omit<Item, 'id'>;
+
+  const duplicatedItemData = {
+    ...originalItem,
+    name: `${originalItem.name} (Copy)`,
+    status: 'Active' as const,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+
+  const itemsCollection = collection(db, 'users', userId, 'items');
+  const newItemRef = await addDoc(itemsCollection, duplicatedItemData);
+
+  const now = Timestamp.now();
+  return {
+    id: newItemRef.id,
+    ...(duplicatedItemData as any),
+    createdAt: now,
+    updatedAt: now,
+  };
 }
 
 export async function archiveItem(
