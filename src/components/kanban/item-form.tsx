@@ -24,7 +24,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type { Item } from '@/lib/types';
 import { createItem, editItem, suggestDateAction, generatePasswordAction } from '@/app/items/actions';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, WandSparkles, RefreshCw } from 'lucide-react';
+import { Loader2, WandSparkles, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useState, useTransition, useMemo } from 'react';
 import { useFirestore, useUser } from '@/firebase';
 import { format, addDays } from 'date-fns';
@@ -70,6 +70,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
   const [isPending, startTransition] = useTransition();
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const firestore = useFirestore();
   const { user } = useUser();
 
@@ -292,19 +293,31 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                     <FormLabel>Password</FormLabel>
                     <div className="relative">
                         <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
+                          <Input type={isPasswordVisible ? 'text' : 'password'} placeholder="••••••••" {...field} />
                         </FormControl>
-                         <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-accent"
-                            onClick={handleGeneratePassword}
-                            disabled={isGenerating}
-                            aria-label="Generate Password"
-                        >
-                            {isGenerating ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-                        </Button>
+                        <div className="absolute right-1 top-1/2 flex -translate-y-1/2">
+                            <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7 text-muted-foreground"
+                                onClick={() => setIsPasswordVisible(prev => !prev)}
+                                aria-label="Toggle password visibility"
+                            >
+                                {isPasswordVisible ? <EyeOff /> : <Eye />}
+                            </Button>
+                             <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7 text-accent"
+                                onClick={handleGeneratePassword}
+                                disabled={isGenerating}
+                                aria-label="Generate Password"
+                            >
+                                {isGenerating ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+                            </Button>
+                        </div>
                     </div>
                      <div className="space-y-1 pt-1">
                         <Progress value={passwordStrength * 20} className="h-2" />
