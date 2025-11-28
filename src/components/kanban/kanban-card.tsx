@@ -78,7 +78,7 @@ export function KanbanCard({
       type: 'item',
       item,
     },
-    disabled: isDragDisabled,
+    disabled: isDragDisabled || !isClient,
   });
 
   const style = {
@@ -108,6 +108,8 @@ export function KanbanCard({
     });
   };
 
+  const cardAttributes = isClient ? attributes : {};
+
   return (
     <>
       <Card
@@ -118,7 +120,7 @@ export function KanbanCard({
           isDragging && 'opacity-50',
           isOverlay && 'shadow-2xl'
         )}
-        {...attributes}
+        {...cardAttributes}
       >
         <CardHeader className="relative flex-row items-start gap-4 space-y-0 p-4">
           <div

@@ -185,7 +185,24 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
     }
   };
 
-  const isClientSideRendered = isClient;
+  if (!isClient) {
+    return (
+        <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {columns.map(column => {
+                const columnItems = items.filter(item => item.status === column.id);
+                return (
+                    <KanbanColumn
+                        key={column.id}
+                        id={column.id}
+                        title={column.title}
+                        items={columnItems}
+                        isDragDisabled={true}
+                    />
+                );
+            })}
+        </div>
+    );
+  }
 
   return (
     <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -204,7 +221,7 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
               id={column.id}
               title={column.title}
               items={columnItems}
-              isDragDisabled={!isClientSideRendered}
+              isDragDisabled={!isClient}
             />
           );
         })}
