@@ -24,6 +24,7 @@ const columns: { id: Status; title: string }[] = [
   { id: 'Active', title: 'Active' },
   { id: 'Sold Out', title: 'Sold Out' },
   { id: 'Expired', title: 'Expired' },
+  { id: 'Archived', title: 'Archived' },
 ];
 
 export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
@@ -43,7 +44,8 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
         item =>
           item.expirationDate &&
           isPast(new Date(item.expirationDate)) &&
-          item.status !== 'Expired'
+          item.status !== 'Expired' &&
+          item.status !== 'Archived'
       );
 
       if (itemsToMove.length > 0) {
@@ -122,6 +124,9 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
       if (activeItem.status !== newStatus) {
         const activeIndex = currentItems.findIndex(i => i.id === activeId);
         currentItems[activeIndex].status = newStatus;
+        if(newStatus === 'Archived' && !currentItems[activeIndex].archivedAt){
+          currentItems[activeIndex].archivedAt = new Date().toISOString();
+        }
         return [...currentItems];
       }
   
@@ -156,14 +161,20 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
 
     // optimistic update
     const previousItems = [...items];
+    
+    const updatedItem = { ...activeItem, status: targetStatus };
+    if (targetStatus === 'Archived' && !activeItem.archivedAt) {
+      updatedItem.archivedAt = new Date().toISOString();
+    }
+
     const updatedItems = items.map(item =>
-        item.id === activeId ? { ...item, status: targetStatus! } : item
+        item.id === activeId ? updatedItem : item
     );
     setItems(updatedItems);
     
     // Server update
     try {
-        await updateItem({ ...activeItem, status: targetStatus });
+        await updateItem(updatedItem);
     } catch (error) {
         setItems(previousItems); // rollback on error
         toast({
@@ -174,21 +185,10 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
     }
   };
 
-  if (!isClient) {
-    return (
-      <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-3">
-        {columns.map(column => {
-          const columnItems = items.filter(item => item.status === column.id);
-          return (
-            <KanbanColumn key={column.id} id={column.id} title={column.title} items={columnItems} isDragDisabled />
-          );
-        })}
-      </div>
-    );
-  }
+  const isClientSideRendered = isClient;
 
   return (
-    <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-3">
+    <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
       <DndContext
         sensors={sensors}
         onDragStart={handleDragStart}
@@ -199,7 +199,13 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
         {columns.map(column => {
           const columnItems = items.filter(item => item.status === column.id);
           return (
-            <KanbanColumn key={column.id} id={column.id} title={column.title} items={columnItems} />
+            <KanbanColumn
+              key={column.id}
+              id={column.id}
+              title={column.title}
+              items={columnItems}
+              isDragDisabled={!isClientSideRendered}
+            />
           );
         })}
         <DragOverlay>

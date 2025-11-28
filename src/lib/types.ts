@@ -1,4 +1,4 @@
-export type Status = 'Active' | 'Sold Out' | 'Expired';
+export type Status = 'Active' | 'Sold Out' | 'Expired' | 'Archived';
 
 export interface Item {
   id: string;
@@ -10,4 +10,5 @@ export interface Item {
   expirationDate?: string;
   reminderDate?: string;
   status: Status;
+  archivedAt?: string;
 }

@@ -4,6 +4,7 @@ import { suggestExpirationDate } from '@/ai/flows/suggest-expiration-date';
 import { initialData } from '@/lib/data';
 import type { Item } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
+import { subDays } from 'date-fns';
 
 // In-memory store for demonstration purposes.
 let items: Item[] = [...initialData];
@@ -13,10 +14,23 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function getItems(): Promise<Item[]> {
   await sleep(500);
+  // Prune items that have been archived for more than 30 days
+  const thirtyDaysAgo = subDays(new Date(), 30);
+  const unprunedItems = items.filter(item => {
+    if (item.status === 'Archived' && item.archivedAt) {
+      return new Date(item.archivedAt) > thirtyDaysAgo;
+    }
+    return true;
+  });
+  if (unprunedItems.length < items.length) {
+    items = unprunedItems;
+    revalidatePath('/');
+  }
+  
   return JSON.parse(JSON.stringify(items));
 }
 
-export async function addItem(item: Omit<Item, 'id'>): Promise<Item> {
+export async function addItem(item: Omit<Item, 'id' | 'archivedAt'>): Promise<Item> {
   await sleep(500);
   const newItem = { ...item, id: crypto.randomUUID() };
   items.push(newItem);
@@ -37,7 +51,11 @@ export async function updateItem(updatedItem: Item): Promise<Item> {
 
 export async function deleteItem(id: string): Promise<{ success: boolean }> {
   await sleep(500);
-  items = items.filter(item => item.id !== id);
+  const index = items.findIndex(item => item.id === id);
+  if (index > -1) {
+    items[index].status = 'Archived';
+    items[index].archivedAt = new Date().toISOString();
+  }
   revalidatePath('/');
   return { success: true };
 }
