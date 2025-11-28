@@ -107,6 +107,11 @@
             "type": "string",
             "description": "Value associated with the contact (e.g., URL, phone number)."
         },
+        "archivedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the item was archived.",
+          "format": "date-time"
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp indicating when the item was created.",

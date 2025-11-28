@@ -33,7 +33,7 @@ import { ItemForm } from './item-form';
 import type { Item, Category } from '@/lib/types';
 import { useState, useTransition, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { format, isPast } from 'date-fns';
+import { format, isPast, formatDistanceToNow } from 'date-fns';
 import {
   CalendarClock,
   GripVertical,
@@ -45,6 +45,7 @@ import {
   CopyCheck,
   Archive,
   CopyPlus,
+  RefreshCcw,
 } from 'lucide-react';
 import { archiveItem, duplicateItem } from '@/app/items/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -108,6 +109,11 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
   const formattedEndDate = item.endDate
     ? format(new Date(item.endDate), 'MMM d, yyyy HH:mm')
     : null;
+    
+  const lastUpdated = item.updatedAt
+    ? formatDistanceToNow(item.updatedAt.toDate(), { addSuffix: true })
+    : 'a few moments ago';
+
 
   const handleArchive = () => {
     if (!firestore || !user) return;
@@ -265,25 +271,27 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
             </div>
           )}
           
-          {item.category && (
-            <Badge variant="outline" className={cn("border", categoryColors[item.category])}>
-                {item.category}
-            </Badge>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {item.category && (
+                <Badge variant="outline" className={cn("border", categoryColors[item.category])}>
+                    {item.category}
+                </Badge>
+            )}
 
-          {formattedEndDate && (
-            <div className="flex items-center gap-2 text-sm">
-              <CalendarClock className="h-4 w-4" />
-              <span
-                className={cn(
-                  'font-medium',
-                  isExpired ? 'text-destructive' : 'text-muted-foreground'
-                )}
-              >
-                {formattedEndDate}
-              </span>
+            {formattedEndDate && (
+                <Badge variant={isExpired ? "destructive" : "outline"} className="flex items-center gap-1.5">
+                    <CalendarClock className="h-3 w-3" />
+                    <span className={cn(isExpired && 'font-bold')}>
+                        {formattedEndDate}
+                    </span>
+                </Badge>
+            )}
+           </div>
+
+            <div className="flex items-center gap-1.5 pt-2 text-xs text-muted-foreground">
+              <RefreshCcw className="h-3 w-3" />
+              <span>Last updated {lastUpdated}</span>
             </div>
-          )}
         </CardContent>
       </Card>
 
