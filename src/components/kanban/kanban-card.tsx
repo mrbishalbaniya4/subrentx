@@ -109,6 +109,10 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
   const formattedEndDate = item.endDate
     ? format(new Date(item.endDate), 'MMM d, yyyy HH:mm')
     : null;
+
+  const endDateDistance = item.endDate
+    ? formatDistanceToNow(new Date(item.endDate), { addSuffix: true })
+    : null;
     
   const lastUpdated = item.updatedAt
     ? formatDistanceToNow(item.updatedAt.toDate(), { addSuffix: true })
@@ -271,7 +275,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
             </div>
           )}
           
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {item.category && (
                 <Badge variant="outline" className={cn("border", categoryColors[item.category])}>
                     {item.category}
@@ -281,8 +285,8 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
             {formattedEndDate && (
                 <Badge variant={isExpired ? "destructive" : "outline"} className="flex items-center gap-1.5">
                     <CalendarClock className="h-3 w-3" />
-                    <span className={cn(isExpired && 'font-bold')}>
-                        {formattedEndDate}
+                    <span className={cn(isExpired && 'font-bold')} title={formattedEndDate}>
+                       {endDateDistance}
                     </span>
                 </Badge>
             )}
