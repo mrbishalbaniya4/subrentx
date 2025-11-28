@@ -30,6 +30,11 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
   const [items, setItems] = useState<Item[]>(initialItems);
   const [activeItem, setActiveItem] = useState<Item | null>(null);
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     const checkAndMoveExpiredItems = async () => {
@@ -168,6 +173,19 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
         });
     }
   };
+
+  if (!isClient) {
+    return (
+      <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-3">
+        {columns.map(column => {
+          const columnItems = items.filter(item => item.status === column.id);
+          return (
+            <KanbanColumn key={column.id} id={column.id} title={column.title} items={columnItems} isDragDisabled />
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-3">

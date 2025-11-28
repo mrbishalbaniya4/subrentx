@@ -11,9 +11,10 @@ interface KanbanColumnProps {
   id: Status;
   title: string;
   items: Item[];
+  isDragDisabled?: boolean;
 }
 
-export function KanbanColumn({ id, title, items }: KanbanColumnProps) {
+export function KanbanColumn({ id, title, items, isDragDisabled }: KanbanColumnProps) {
   const itemIds = useMemo(() => items.map(item => item.id), [items]);
 
   const { setNodeRef } = useSortable({
@@ -21,6 +22,7 @@ export function KanbanColumn({ id, title, items }: KanbanColumnProps) {
     data: {
       type: 'column',
     },
+    disabled: isDragDisabled,
   });
 
   return (
@@ -35,9 +37,9 @@ export function KanbanColumn({ id, title, items }: KanbanColumnProps) {
         )}
       >
         <div className="flex flex-col gap-4">
-          <SortableContext items={itemIds}>
+          <SortableContext items={itemIds} disabled={isDragDisabled}>
             {items.length > 0 ? (
-              items.map(item => <KanbanCard key={item.id} item={item} />)
+              items.map(item => <KanbanCard key={item.id} item={item} isDragDisabled={isDragDisabled} />)
             ) : (
               <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed">
                 <p className="text-sm text-muted-foreground">Drop items here</p>

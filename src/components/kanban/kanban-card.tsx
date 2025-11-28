@@ -21,9 +21,10 @@ import { CalendarClock, GripVertical } from 'lucide-react';
 interface KanbanCardProps {
   item: Item;
   isOverlay?: boolean;
+  isDragDisabled?: boolean;
 }
 
-export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
+export function KanbanCard({ item, isOverlay, isDragDisabled }: KanbanCardProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const {
@@ -39,6 +40,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
       type: 'item',
       item,
     },
+    disabled: isDragDisabled,
   });
 
   const style = {
@@ -63,7 +65,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
           <div className="flex-1 space-y-1" onClick={() => setIsDialogOpen(true)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setIsDialogOpen(true)}>
             <CardTitle className="text-lg font-headline">{item.name}</CardTitle>
           </div>
-          <div {...attributes} {...listeners} className="cursor-grab p-2">
+          <div {...attributes} {...listeners} className={cn("cursor-grab p-2", isDragDisabled && "cursor-not-allowed")}>
             <GripVertical className="h-5 w-5 text-muted-foreground" />
           </div>
         </CardHeader>
