@@ -1,6 +1,7 @@
 'use server';
 
 import { suggestExpirationDate } from '@/ai/flows/suggest-expiration-date';
+import { generatePassword } from '@/ai/flows/generate-password-flow';
 import type { Item } from '@/lib/types';
 import {
   getFirestore,
@@ -28,11 +29,10 @@ export async function createItem(
 ): Promise<Item> {
   const itemsCollection = collection(db, 'users', userId, 'items');
 
-  // Remove id if it exists, as it's not needed for creation
-  const { id, ...dataToSave } = {
+  const dataToSave = {
     ...itemData,
     userId: userId,
-    status: 'Active',
+    status: 'Active' as const,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -43,7 +43,7 @@ export async function createItem(
   // We can't just spread dataToSave because createdAt/updatedAt are server values.
   // We return an optimistic response with client-generated timestamps.
   return { 
-    ...itemData,
+    ...(itemData as any),
     id: newItemRef.id,
     userId: userId,
     status: 'Active',
@@ -55,25 +55,36 @@ export async function createItem(
 export async function editItem(
   db: ReturnType<typeof getFirestore>,
   userId: string,
-  itemData: Omit<Item, 'createdAt' | 'updatedAt'> & { createdAt?: Timestamp }
+  itemData: Omit<Item, 'createdAt' | 'updatedAt'> & { createdAt?: Timestamp | Date }
 ): Promise<Item> {
   const { id: itemId, ...dataToUpdate } = itemData;
   const itemRef = doc(db, 'users', userId, 'items', itemId);
   
+  // Ensure we don't try to write the id field back to the document
   const dataToSave = {
     ...dataToUpdate,
     updatedAt: serverTimestamp(),
   };
 
-  await updateDoc(itemRef, dataToSave);
+  await updateDoc(itemRef, dataToSave as any);
 
   const now = Timestamp.now();
-  // Ensure createdAt is carried over correctly, falling back to a new timestamp if it's missing.
-  // The client-side state will be updated by the real-time listener anyway.
+  
+  let finalCreatedAt: Timestamp;
+
+  if (itemData.createdAt instanceof Timestamp) {
+    finalCreatedAt = itemData.createdAt;
+  } else if (itemData.createdAt instanceof Date) {
+    finalCreatedAt = Timestamp.fromDate(itemData.createdAt);
+  } else {
+    // This case should ideally not happen if data is consistent
+    finalCreatedAt = now;
+  }
+
   return {
     ...itemData,
-    createdAt: itemData.createdAt || now, // Preserve original createdAt
-    updatedAt: now, // Optimistic update
+    createdAt: finalCreatedAt,
+    updatedAt: now,
   } as Item;
 }
 
@@ -138,5 +149,22 @@ export async function suggestDateAction(itemDescription: string): Promise<{
   } catch (e) {
     console.error(e);
     return { error: 'Failed to suggest a date. Please try again.' };
+  }
+}
+
+export async function generatePasswordAction(): Promise<{
+  password?: string;
+  error?: string;
+}> {
+  try {
+    const result = await generatePassword({
+      length: 16,
+      includeNumbers: true,
+      includeSymbols: true,
+    });
+    return { password: result.password };
+  } catch (e) {
+    console.error(e);
+    return { error: 'Failed to generate a password. Please try again.' };
   }
 }

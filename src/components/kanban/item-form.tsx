@@ -22,12 +22,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Item } from '@/lib/types';
-import { createItem, editItem, suggestDateAction } from '@/app/items/actions';
+import { createItem, editItem, suggestDateAction, generatePasswordAction } from '@/app/items/actions';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, WandSparkles } from 'lucide-react';
-import { useState, useTransition } from 'react';
+import { Loader2, WandSparkles, RefreshCw } from 'lucide-react';
+import { useState, useTransition, useMemo } from 'react';
 import { useFirestore, useUser } from '@/firebase';
 import { format, addDays } from 'date-fns';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 const itemSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -50,10 +52,24 @@ interface ItemFormProps {
   setDialogOpen: (open: boolean) => void;
 }
 
+const getPasswordStrength = (password: string) => {
+    let score = 0;
+    if (!password) return 0;
+    if (password.length >= 8) score++;
+    if (password.length >= 12) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[a-z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+    return Math.min(score, 5); // Max score of 5
+};
+
+
 export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const firestore = useFirestore();
   const { user } = useUser();
 
@@ -85,6 +101,26 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
   });
 
   const category = form.watch('category');
+  const password = form.watch('password') || '';
+  const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
+
+  const strengthColors = [
+    'bg-gray-200', // 0
+    'bg-red-500',   // 1
+    'bg-orange-500',// 2
+    'bg-yellow-500',// 3
+    'bg-green-400', // 4
+    'bg-green-600', // 5
+  ];
+
+  const strengthLabels = [
+    'Empty',
+    'Very Weak',
+    'Weak',
+    'Fair',
+    'Good',
+    'Strong',
+  ];
 
   const getContactValuePlaceholder = () => {
     switch (category) {
@@ -112,20 +148,29 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
     startTransition(async () => {
       try {
         if (item) {
+          // When editing, we need to handle the potential difference in date formats.
+          // The form uses string dates, but the `item` object might have Timestamps.
           const itemDataToUpdate = {
-            ...item,
-            ...values,
+            ...item, // This includes original createdAt, id, etc.
+            ...values, // This overwrites with form values
+            startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
+            endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
           };
           await editItem(firestore, user.uid, itemDataToUpdate);
           toast({ title: 'Success', description: 'Item updated successfully.' });
         } else {
-          // For creating, we use only the form values.
-          await createItem(firestore, user.uid, values);
+          // When creating, we convert dates to ISO strings before sending.
+           const itemDataToCreate = {
+            ...values,
+            startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
+            endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
+          };
+          await createItem(firestore, user.uid, itemDataToCreate);
           toast({ title: 'Success', description: 'Item added successfully.' });
         }
         setDialogOpen(false);
       } catch (error) {
-        console.error(error);
+        console.error("Form submission error:", error);
         toast({
           variant: 'destructive',
           title: 'Error',
@@ -164,6 +209,27 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
         });
       }
       setIsSuggesting(false);
+    });
+  };
+  
+  const handleGeneratePassword = () => {
+    setIsGenerating(true);
+    startTransition(async () => {
+      const result = await generatePasswordAction();
+      if (result.password) {
+        form.setValue('password', result.password, { shouldValidate: true });
+        toast({
+          title: 'Password Generated',
+          description: 'A new strong password has been set.',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Generation Failed',
+          description: result.error,
+        });
+      }
+      setIsGenerating(false);
     });
   };
 
@@ -210,9 +276,28 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input type="password" placeholder="••••••••" {...field} />
-                </FormControl>
+                <div className="relative">
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
+                    </FormControl>
+                     <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-accent"
+                        onClick={handleGeneratePassword}
+                        disabled={isGenerating}
+                        aria-label="Generate Password"
+                    >
+                        {isGenerating ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+                    </Button>
+                </div>
+                 <div className="space-y-1">
+                    <Progress value={passwordStrength * 20} className="h-2" />
+                    <p className="text-xs text-muted-foreground" style={{ color: strengthColors[passwordStrength].replace('bg-', '').replace('-500', '') }}>
+                        {strengthLabels[passwordStrength]}
+                    </p>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
