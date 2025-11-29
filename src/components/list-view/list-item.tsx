@@ -47,9 +47,10 @@ import {
   Loader2,
   CopyPlus,
   Archive,
-  ArrowRight
+  ArrowRight,
+  ArchiveRestore,
 } from 'lucide-react';
-import { archiveItem, duplicateItem, updateItemStatus } from '@/firebase/firestore/mutations';
+import { archiveItem, duplicateItem, updateItemStatus, deleteItem } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser } from '@/firebase';
 
@@ -76,6 +77,7 @@ const statusColors: Record<string, string> = {
 
 export function ListItem({ item }: ListItemProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -95,7 +97,7 @@ export function ListItem({ item }: ListItemProps) {
           title: 'Success',
           description: 'Item moved to Archived.',
         });
-        setIsDeleteDialogOpen(false);
+        setIsArchiveDialogOpen(false);
       } catch (error) {
         toast({
           variant: 'destructive',
@@ -105,6 +107,26 @@ export function ListItem({ item }: ListItemProps) {
       }
     });
   };
+
+  const handleDelete = () => {
+    if (!user || !firestore) return;
+    startTransition(async () => {
+      try {
+        await deleteItem(firestore, user.uid, item.id);
+        toast({
+          title: 'Success',
+          description: 'Item permanently deleted.',
+        });
+        setIsDeleteDialogOpen(false);
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to delete item.',
+        });
+      }
+    });
+  }
 
   const handleDuplicate = () => {
     if (!user || !firestore) return;
@@ -228,26 +250,42 @@ export function ListItem({ item }: ListItemProps) {
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent>
-                    {(['Active', 'Sold Out', 'Expired', 'Archived'] as Status[]).map((status) => (
-                      <DropdownMenuItem
+                     {(['Active', 'Sold Out', 'Expired', 'Archived'] as Status[]).map((status) => (
+                       <DropdownMenuItem
                         key={status}
                         disabled={item.status === status || isPending}
                         onClick={() => handleStatusChange(status)}
                       >
-                        {status}
+                         {status === 'Archived' && item.status === 'Archived' ? (
+                          <>
+                            <ArchiveRestore className="mr-2 h-4 w-4" />
+                            <span>Unarchive</span>
+                          </>
+                        ) : (
+                          status
+                        )}
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => setIsDeleteDialogOpen(true)}
-              >
-                <Archive className="mr-2 h-4 w-4" />
-                <span>Archive</span>
-              </DropdownMenuItem>
+              {item.status === 'Archived' ? (
+                 <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    <span>Delete Permanently</span>
+                  </DropdownMenuItem>
+              ) : (
+                 <DropdownMenuItem
+                    onClick={() => setIsArchiveDialogOpen(true)}
+                  >
+                    <Archive className="mr-2 h-4 w-4" />
+                    <span>Archive</span>
+                  </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </TableCell>
@@ -266,8 +304,8 @@ export function ListItem({ item }: ListItemProps) {
       </Dialog>
 
       <AlertDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
+        open={isArchiveDialogOpen}
+        onOpenChange={setIsArchiveDialogOpen}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -281,7 +319,6 @@ export function ListItem({ item }: ListItemProps) {
             <AlertDialogAction
               onClick={handleArchive}
               disabled={isPending}
-              className="bg-destructive hover:bg-destructive/90"
             >
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Archive
@@ -289,8 +326,31 @@ export function ListItem({ item }: ListItemProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+       <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{item.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the item and all of its associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete Permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
-
-    

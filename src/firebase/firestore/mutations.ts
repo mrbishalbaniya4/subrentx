@@ -10,6 +10,7 @@ import {
   getDoc,
   Timestamp,
   FieldValue,
+  deleteDoc as fbDeleteDoc,
 } from 'firebase/firestore';
 import type { Item, Status } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -95,43 +96,66 @@ export async function editItem(
   const { id: itemId, ...dataToUpdate } = itemData;
   const itemRef = doc(firestore, `users/${userId}/items/${itemId}`);
 
-  const dataToSave = {
-    ...dataToUpdate,
-    updatedAt: serverTimestamp(),
-  };
-
+  // Fetch the original document to preserve immutable fields
   try {
+    const docSnap = await getDoc(itemRef);
+    if (!docSnap.exists()) {
+      throw new Error('Item not found');
+    }
+    const originalData = docSnap.data();
+
+    const dataToSave = {
+      ...originalData, // Start with existing data
+      ...dataToUpdate, // Overwrite with new data
+      updatedAt: serverTimestamp(),
+      // Ensure immutable fields are from the original data
+      createdAt: originalData.createdAt,
+      userId: originalData.userId,
+    };
+    
+    // Prepare a version for the error emitter that shows serverTimestamp
+    const dataToSaveForError = {
+        ...dataToUpdate,
+        updatedAt: serverTimestamp(),
+    };
+
+
     await updateDoc(itemRef, dataToSave);
 
-    if (dataToUpdate.password !== undefined) {
-        await logActivity(
-          firestore,
-          userId,
-          itemId,
-          dataToUpdate.name || 'Item',
-          'password_changed',
-          'Password was changed'
-        );
-      } else {
-        await logActivity(
-          firestore,
-          userId,
-          itemId,
-          dataToUpdate.name || 'Item',
-          'updated',
-          'Item details updated'
-        );
-      }
+    // Log activity based on what was changed
+    let activityAction = 'updated';
+    let activityDetails = 'Item details updated';
+
+    if ('password' in dataToUpdate && dataToUpdate.password !== originalData.password) {
+      activityAction = 'password_changed';
+      activityDetails = 'Password was changed';
+    } else if ('status' in dataToUpdate && dataToUpdate.status !== originalData.status) {
+        activityAction = 'updated';
+        activityDetails = `Status changed to ${dataToUpdate.status}`;
+    }
+
+    await logActivity(
+        firestore,
+        userId,
+        itemId,
+        dataToSave.name || 'Item',
+        activityAction,
+        activityDetails
+    );
 
   } catch(error) {
       console.error('Error updating item:', error);
+      const dataToSaveForError = {
+        ...dataToUpdate,
+        updatedAt: new Date().toISOString(),
+      }
 
       errorEmitter.emit(
         'permission-error',
         new FirestorePermissionError({
             path: itemRef.path,
             operation: 'update',
-            requestResourceData: dataToSave,
+            requestResourceData: dataToSaveForError,
         })
     );
     throw error;
@@ -146,20 +170,29 @@ export async function updateItemStatus(
 ): Promise<void> {
   const itemRef = doc(firestore, `users/${userId}/items/${itemId}`);
   
-  const updateData: { status: Status; archivedAt?: string; updatedAt: FieldValue } = {
+  const updateData: { status: Status; archivedAt?: string | null; updatedAt: FieldValue } = {
     status: newStatus,
     updatedAt: serverTimestamp(),
   };
 
   if (newStatus === 'Archived') {
     updateData.archivedAt = new Date().toISOString();
+  } else if (newStatus !== 'Archived') {
+    // If we are un-archiving, we can set it to null
+    updateData.archivedAt = null;
   }
+
 
   try {
     await updateDoc(itemRef, updateData);
 
     const itemName = (await getDoc(itemRef)).data()?.name || 'Item';
-    await logActivity(firestore, userId, itemId, itemName, 'updated', `Status changed to ${newStatus}`);
+    if(newStatus === 'Archived') {
+        await logActivity(firestore, userId, itemId, itemName, 'archived', `Item was archived`);
+    } else {
+        await logActivity(firestore, userId, itemId, itemName, 'updated', `Status changed to ${newStatus}`);
+    }
+
   } catch (error) {
     console.error('Error updating item status:', error);
     errorEmitter.emit(
@@ -167,7 +200,7 @@ export async function updateItemStatus(
       new FirestorePermissionError({
         path: itemRef.path,
         operation: 'update',
-        requestResourceData: updateData,
+        requestResourceData: { status: newStatus, updatedAt: new Date().toISOString() },
       })
     );
     throw error;
@@ -248,6 +281,31 @@ export async function archiveItem(firestore: Firestore, userId: string, itemId: 
                 path: itemRef.path,
                 operation: 'update',
                 requestResourceData: { status: 'Archived' },
+            })
+        );
+        throw error;
+    }
+}
+
+export async function deleteItem(firestore: Firestore, userId: string, itemId: string): Promise<void> {
+    const itemRef = doc(firestore, `users/${userId}/items/${itemId}`);
+    try {
+        const docSnap = await getDoc(itemRef);
+        if (!docSnap.exists()) {
+            throw new Error('Item not found');
+        }
+        const item = docSnap.data() as Item;
+
+        await fbDeleteDoc(itemRef);
+        await logActivity(firestore, userId, itemId, item.name, 'deleted', 'Item was permanently deleted');
+
+    } catch (error) {
+        console.error('Error deleting item:', error);
+        errorEmitter.emit(
+            'permission-error',
+            new FirestorePermissionError({
+                path: itemRef.path,
+                operation: 'delete',
             })
         );
         throw error;
