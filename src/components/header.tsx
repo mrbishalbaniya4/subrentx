@@ -14,6 +14,7 @@ import {
 import { Search, LayoutGrid, List, KanbanSquare } from 'lucide-react';
 import type { FilterCategory, FilterUrgency, SortByType, ViewMode } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 interface HeaderProps {
   searchQuery: string;
@@ -48,10 +49,13 @@ export function Header({
     <>
       <header className="sticky top-0 z-30 flex h-auto shrink-0 flex-col items-center gap-4 border-b bg-background/80 px-4 py-2 backdrop-blur-sm md:h-16 md:flex-row md:py-0 md:px-6">
         <div className="flex w-full flex-shrink-0 items-center gap-2 md:w-auto">
-          <VaultboxLogo className="h-8 w-8 text-primary" />
-          <h1 className="font-headline text-2xl font-bold text-foreground">
-            VaultBox
-          </h1>
+          <SidebarTrigger className="md:hidden"/>
+          <div className="hidden items-center gap-2 md:flex">
+            <VaultboxLogo className="h-8 w-8 text-primary" />
+            <h1 className="font-headline text-2xl font-bold text-foreground">
+                VaultBox
+            </h1>
+          </div>
         </div>
         
         {user && isClient && (
@@ -140,16 +144,10 @@ export function Header({
         )}
 
         <div className="ml-auto hidden items-center gap-2 md:flex">
+           <SidebarTrigger />
           <UserNav />
         </div>
       </header>
-
-      <div className="fixed bottom-4 right-4 z-40 flex flex-col items-center gap-3">
-        {user && <AddItemButton />}
-        <div className="flex gap-3 md:hidden">
-            <UserNav />
-        </div>
-      </div>
     </>
   );
 }
