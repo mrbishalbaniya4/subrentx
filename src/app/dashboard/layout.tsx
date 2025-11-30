@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { VaultboxLogo } from '@/components/icons/vaultbox-logo';
 import { UserNav } from '@/components/user-nav';
-import { Home, KanbanSquare, Settings } from 'lucide-react';
+import { KanbanSquare, Settings } from 'lucide-react';
 import { AddItemButton } from '@/components/kanban/add-item-button';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
@@ -56,12 +56,6 @@ export default function DashboardLayout({
               <SidebarMenuButton href="/dashboard" isActive>
                 <KanbanSquare />
                 All Items
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-             <SidebarMenuItem>
-              <SidebarMenuButton href="#">
-                <Home />
-                Home
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
