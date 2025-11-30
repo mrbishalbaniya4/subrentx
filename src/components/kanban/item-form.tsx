@@ -44,6 +44,7 @@ const itemSchema = z.object({
   category: z.enum(['Work', 'Personal', 'Finance', 'Shopping', 'Social', 'Travel', 'Other']).optional(),
   contactName: z.string().optional(),
   contactValue: z.string().optional(),
+  purchasePrice: z.coerce.number().optional(),
 });
 
 type ItemFormValues = z.infer<typeof itemSchema>;
@@ -107,6 +108,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           category: 'Personal',
           contactName: '',
           contactValue: '',
+          purchasePrice: 0,
         },
   });
 
@@ -314,6 +316,25 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                   </FormItem>
                 )}
               />
+        </div>
+        
+        <Separator />
+
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Financials</h3>
+          <FormField
+            control={form.control}
+            name="purchasePrice"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Purchase Price</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="0.00" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         <Separator />

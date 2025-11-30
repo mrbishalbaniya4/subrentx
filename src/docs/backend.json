@@ -107,6 +107,10 @@
             "type": "string",
             "description": "Value associated with the contact (e.g., URL, phone number)."
         },
+        "purchasePrice": {
+          "type": "number",
+          "description": "The price at which the item was purchased."
+        },
         "archivedAt": {
           "type": "string",
           "description": "Timestamp indicating when the item was archived.",
@@ -121,10 +125,6 @@
           "type": "string",
           "description": "Timestamp indicating when the item was last updated.",
           "format": "date-time"
-        },
-        "parentId": {
-          "type": "string",
-          "description": "The ID of the parent item, if this is a sub-item."
         }
       },
       "required": [
