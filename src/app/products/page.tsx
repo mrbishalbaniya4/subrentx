@@ -9,6 +9,7 @@ import { ProductList } from '@/components/products/product-list';
 import type { Item } from '@/lib/types';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { AddItemButton } from '@/components/kanban/add-item-button';
 
 export default function ProductsPage() {
   const { user, isUserLoading } = useUser();
@@ -55,8 +56,11 @@ export default function ProductsPage() {
             </h1>
         </div>
       </header>
-      <main className="flex-1 overflow-auto p-4 md:p-6">
+      <main className="relative flex-1 overflow-auto p-4 md:p-6">
         <ProductList items={items || []} />
+        <div className="fixed bottom-6 right-6 z-40">
+           <AddItemButton />
+        </div>
       </main>
     </div>
   );
