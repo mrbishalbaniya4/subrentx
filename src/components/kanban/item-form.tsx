@@ -107,6 +107,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           endDate: item.endDate
             ? format(new Date(item.endDate), "yyyy-MM-dd'T'HH:mm")
             : '',
+          parentId: item.parentId || 'none',
         }
       : {
           name: '',
@@ -120,7 +121,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           category: 'Personal',
           contactName: '',
           contactValue: '',
-          parentId: null,
+          parentId: 'none',
         },
   });
 
@@ -143,6 +144,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
             ...values,
             startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
             endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
+            parentId: values.parentId === 'none' ? null : values.parentId,
         };
         if (item) {
           await editItem(firestore, user.uid, { ...item, ...itemData });
@@ -279,7 +281,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                 <FormLabel>Assign from Master Product</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value || ''}
+                  value={field.value || 'none'}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -287,7 +289,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">
+                    <SelectItem value="none">
                       None (This is a master product)
                     </SelectItem>
                     {masterProducts.map((product) => (
@@ -463,3 +465,5 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
     </Form>
   );
 }
+
+    
