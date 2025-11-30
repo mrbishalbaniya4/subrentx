@@ -153,8 +153,9 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
         if (selectedMaster) {
             form.setValue('name', selectedMaster.name);
             form.setValue('username', selectedMaster.username);
-            form.setValue('password', selectedMaster.password);
-            form.setValue('notes', selectedMaster.notes);
+            // Don't set password or notes, allow them to be unique per assignment
+            form.setValue('password', ''); 
+            form.setValue('notes', '');
             form.setValue('category', selectedMaster.category);
         }
     }
@@ -163,7 +164,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
   const password = form.watch('password') || '';
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
   
-  const isMasterProduct = parentId === 'none';
+  const isMasterProduct = !parentId || parentId === 'none';
 
   const onSubmit = (values: ItemFormValues) => {
     if (!user || !firestore) {
@@ -333,7 +334,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Netflix Subscription" {...field} disabled={!isMasterProduct && !!parentId} />
+                    <Input placeholder="e.g., Netflix Subscription" {...field} disabled={!isMasterProduct} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -345,7 +346,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={!isMasterProduct && !!parentId}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={!isMasterProduct}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
@@ -378,7 +379,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                   <FormItem>
                     <FormLabel>Username/Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="user@example.com" {...field} disabled={!isMasterProduct && !!parentId}/>
+                      <Input placeholder="user@example.com" {...field} disabled={!isMasterProduct}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -392,7 +393,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                     <FormLabel>Password</FormLabel>
                     <div className="relative">
                         <FormControl>
-                          <Input type={isPasswordVisible ? 'text' : 'password'} placeholder="••••••••" {...field} disabled={!isMasterProduct && !!parentId} />
+                          <Input type={isPasswordVisible ? 'text' : 'password'} placeholder="••••••••" {...field} />
                         </FormControl>
                         <div className="absolute right-1 top-1/2 flex -translate-y-1/2">
                             <Button
@@ -402,7 +403,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                                 className="h-7 w-7 text-muted-foreground"
                                 onClick={() => setIsPasswordVisible(prev => !prev)}
                                 aria-label="Toggle password visibility"
-                                disabled={!isMasterProduct && !!parentId}
                             >
                                 {isPasswordVisible ? <EyeOff /> : <Eye />}
                             </Button>
@@ -412,7 +412,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                                 variant="ghost"
                                 className="h-7 w-7 text-accent"
                                 onClick={handleGeneratePassword}
-                                disabled={isGenerating || (!isMasterProduct && !!parentId)}
+                                disabled={isGenerating}
                                 aria-label="Generate Password"
                             >
                                 {isGenerating ? <Loader2 className="animate-spin" /> : <RefreshCw />}
@@ -464,7 +464,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                 <FormItem>
                   <FormLabel>Notes</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Add any relevant comments here." {...field} disabled={!isMasterProduct && !!parentId} />
+                    <Textarea placeholder="Add any relevant comments here." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -550,3 +550,5 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
     </Form>
   );
 }
+
+    
