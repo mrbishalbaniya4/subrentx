@@ -22,9 +22,6 @@ export interface Item {
   category?: Category;
   contactName?: string;
   contactValue?: string;
-  purchasePrice?: number;
-  sellingPrice?: number;
-  profit?: number;
   archivedAt?: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;

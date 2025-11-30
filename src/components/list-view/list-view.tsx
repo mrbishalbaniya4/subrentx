@@ -32,7 +32,6 @@ export function ListView({ items }: ListViewProps) {
             <TableHead>Category</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Expires</TableHead>
-            <TableHead>Profit/Loss</TableHead>
             <TableHead>Last Updated</TableHead>
             <TableHead className="w-[50px] text-right"></TableHead>
           </TableRow>

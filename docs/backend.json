@@ -107,18 +107,6 @@
             "type": "string",
             "description": "Value associated with the contact (e.g., URL, phone number)."
         },
-        "purchasePrice": {
-          "type": "number",
-          "description": "The price at which the item was purchased."
-        },
-        "sellingPrice": {
-            "type": "number",
-            "description": "The price at which the item was sold."
-        },
-        "profit": {
-            "type": "number",
-            "description": "The calculated profit or loss (selling price - purchase price)."
-        },
         "archivedAt": {
           "type": "string",
           "description": "Timestamp indicating when the item was archived.",

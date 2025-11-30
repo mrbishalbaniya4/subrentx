@@ -26,12 +26,11 @@ import { createItem, editItem } from '@/firebase/firestore/mutations';
 import { suggestDateAction, generatePasswordAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, WandSparkles, RefreshCw, Eye, EyeOff } from 'lucide-react';
-import { useState, useTransition, useMemo, useEffect } from 'react';
+import { useState, useTransition, useMemo } from 'react';
 import { useFirestore, useUser } from '@/firebase';
 import { format, addDays } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
 
 const itemSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -45,9 +44,6 @@ const itemSchema = z.object({
   category: z.enum(['Work', 'Personal', 'Finance', 'Shopping', 'Social', 'Travel', 'Other']).optional(),
   contactName: z.string().optional(),
   contactValue: z.string().optional(),
-  purchasePrice: z.coerce.number().optional(),
-  sellingPrice: z.coerce.number().optional(),
-  profit: z.coerce.number().optional(),
 });
 
 type ItemFormValues = z.infer<typeof itemSchema>;
@@ -68,15 +64,6 @@ const getPasswordStrength = (password: string) => {
     if (/[^A-Za-z0-9]/.test(password)) score++;
     return Math.min(score, 5); // Max score of 5
 };
-
-const strengthColors = [
-    'bg-gray-200', // 0
-    'bg-red-500',   // 1
-    'bg-orange-500',// 2
-    'bg-yellow-500',// 3
-    'bg-green-400', // 4
-    'bg-green-600', // 5
-];
 
 const strengthLabels = [
     'Empty',
@@ -120,24 +107,11 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           category: 'Personal',
           contactName: '',
           contactValue: '',
-          purchasePrice: 0,
-          sellingPrice: 0,
-          profit: 0,
         },
   });
-  
-  const purchasePrice = form.watch('purchasePrice') || 0;
-  const sellingPrice = form.watch('sellingPrice') || 0;
-
-  useEffect(() => {
-    const profit = sellingPrice - purchasePrice;
-    form.setValue('profit', profit);
-  }, [purchasePrice, sellingPrice, form]);
-
 
   const password = form.watch('password') || '';
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
-  const profit = form.watch('profit') || 0;
 
   const onSubmit = (values: ItemFormValues) => {
     if (!user || !firestore) {
@@ -345,43 +319,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
         <Separator />
         
         <div className="space-y-4">
-            <h3 className="text-lg font-medium">Financials</h3>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                 <FormField
-                    control={form.control}
-                    name="purchasePrice"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Purchase Price</FormLabel>
-                        <FormControl>
-                            <Input type="number" placeholder="e.g., 100" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                 />
-                 <FormField
-                    control={form.control}
-                    name="sellingPrice"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Selling Price</FormLabel>
-                        <FormControl>
-                            <Input type="number" placeholder="e.g., 150" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                 />
-            </div>
-            <div className="font-medium">
-                Profit: <span className={cn(profit > 0 ? 'text-green-600' : 'text-red-600')}>{profit.toFixed(2)}</span>
-            </div>
-        </div>
-
-        <Separator />
-        
-        <div className="space-y-4">
             <h3 className="text-lg font-medium">Comments</h3>
             <FormField
               control={form.control}
@@ -476,5 +413,3 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
     </Form>
   );
 }
-
-    
