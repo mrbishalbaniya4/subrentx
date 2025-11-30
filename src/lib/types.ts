@@ -22,15 +22,13 @@ export interface Item {
   category?: Category;
   contactName?: string;
   contactValue?: string;
-  purchasePrice?: number;
-  sellingPrice?: number;
-  profit?: number;
-  archivedAt?: string;
+  archivedAt?: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  parentId?: string | null;
 }
 
-export type ActivityLogAction = 'created' | 'updated' | 'password_changed' | 'archived' | 'unarchived';
+export type ActivityLogAction = 'created' | 'updated' | 'password_changed' | 'archived' | 'unarchived' | 'deleted';
 
 export interface ActivityLog {
   id: string;

@@ -1,0 +1,246 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user account in the VaultBox application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "User's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "User's last name."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was last updated.",
+          "format": "date-time"
+        },
+        "googleId": {
+          "type": "string",
+          "description": "User's Google ID. Used for Google Login"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Item": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Item",
+      "type": "object",
+      "description": "Represents a stored item in the user's vault.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Item entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Item)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the item (e.g., 'My Bank Account')."
+        },
+        "username": {
+          "type": "string",
+          "description": "Username associated with the item."
+        },
+        "password": {
+          "type": "string",
+          "description": "Password associated with the item. Should be encrypted before storing."
+        },
+        "pin": {
+          "type": "string",
+          "description": "PIN associated with the item. Should be encrypted before storing."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes related to the item."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Start date of the item.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "End date of the item.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the item (Active, Sold Out, Expired).",
+          "format": "string"
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the item.",
+          "enum": ["Work", "Personal", "Finance", "Shopping", "Social", "Travel", "Other"]
+        },
+        "contactName": {
+            "type": "string",
+            "description": "Name of the contact person."
+        },
+        "contactValue": {
+            "type": "string",
+            "description": "Value associated with the contact (e.g., URL, phone number)."
+        },
+        "archivedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the item was archived.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the item was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the item was last updated.",
+          "format": "date-time"
+        },
+        "parentId": {
+          "type": "string",
+          "description": "The ID of the parent item, if this is a sub-item."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ActivityLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ActivityLog",
+      "type": "object",
+      "description": "Represents an activity log entry.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the log entry."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who performed the action."
+        },
+        "itemId": {
+          "type": "string",
+          "description": "The ID of the item that was affected."
+        },
+        "itemName": {
+          "type": "string",
+          "description": "The name of the item at the time of the action."
+        },
+        "action": {
+          "type": "string",
+          "description": "The type of action performed.",
+          "enum": ["created", "updated", "password_changed", "archived", "unarchived"]
+        },
+        "details": {
+          "type": "string",
+          "description": "A description of the change."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the action occurred.",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "userId", "itemId", "itemName", "action", "timestamp"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "google.com"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Access is restricted to the authenticated user (path-based ownership).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/items/{itemId}",
+        "definition": {
+          "entityName": "Item",
+          "schema": {
+            "$ref": "#/backend/entities/Item"
+          },
+          "description": "Stores items owned by a specific user. Path-based ownership ensures only the user can access their items.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user."
+            },
+            {
+              "name": "itemId",
+              "description": "The unique ID of the item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/activity-logs/{logId}",
+        "definition": {
+          "entityName": "ActivityLog",
+          "schema": {
+            "$ref": "#/backend/entities/ActivityLog"
+          },
+          "description": "Stores activity logs for a user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user."
+            },
+            {
+              "name": "logId",
+              "description": "The unique ID of the log entry."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure secure and scalable data storage for VaultBox, focusing on authorization independence, clarity, and adherence to best practices.  It leverages path-based ownership and explicit data denormalization to avoid complex security rules that rely on `get()` calls.  \n\nThe structure uses the following patterns:\n\n*   **/users/{userId}**:  This collection stores user profiles. Access is restricted to the authenticated user (path-based ownership).\n*   **/users/{userId}/items/{itemId}**: Stores items owned by a specific user. Path-based ownership ensures only the user can access their items.\n*   **/users/{userId}/activity-logs/{logId}**: Stores activity logs for a specific user. Path-based ownership ensures only the user can access their own activity history.\n\n**Authorization Independence:** The primary method to achieve Authorization Independence is through path-based ownership. Since each `Item` is stored within the `/users/{userId}/items/{itemId}` path, security rules can directly verify that `request.auth.uid == userId` without needing to `get()` any data from parent documents. This simplifies rules and enables atomic operations.\n\n**QAPs (Rules are not Filters):** The structure supports secure `list` operations because of path-based ownership. When listing items under `/users/{userId}/items`, rules can efficiently verify the user's ID against the `userId` path parameter, ensuring that only the user's own items are returned. This avoids needing to filter based on document data, which is an anti-pattern in Firestore security rules."
+  }
+}

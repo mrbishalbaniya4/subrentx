@@ -2,10 +2,9 @@
 
 import React, { useMemo } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Loader2, ArrowLeft, ShoppingBag } from 'lucide-react';
-import { Header } from '@/components/header';
 import { ProductList } from '@/components/products/product-list';
 import type { Item } from '@/lib/types';
 import Link from 'next/link';
@@ -18,8 +17,11 @@ export default function ProductsPage() {
 
   const itemsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    // Sort by creation date by default
-    return query(collection(firestore, 'users', user.uid, 'items'), orderBy('createdAt', 'desc'));
+    // Query for items that are "master" products (don't have a parentId)
+    return query(
+        collection(firestore, 'users', user.uid, 'items'),
+        where('parentId', '==', null)
+    );
   }, [firestore, user]);
 
   const { data: items, isLoading: areItemsLoading } = useCollection<Item>(itemsQuery);
@@ -49,7 +51,7 @@ export default function ProductsPage() {
         <div className="flex items-center gap-2">
             <ShoppingBag className="h-6 w-6" />
             <h1 className="font-headline text-xl font-bold text-foreground">
-                Products
+                Master Products
             </h1>
         </div>
       </header>

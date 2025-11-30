@@ -27,10 +27,11 @@ import { suggestDateAction, generatePasswordAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, WandSparkles, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useState, useTransition, useMemo } from 'react';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { format, addDays } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { collection, query } from 'firebase/firestore';
 
 const itemSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -44,6 +45,7 @@ const itemSchema = z.object({
   category: z.enum(['Work', 'Personal', 'Finance', 'Shopping', 'Social', 'Travel', 'Other']).optional(),
   contactName: z.string().optional(),
   contactValue: z.string().optional(),
+  parentId: z.string().optional().nullable(),
 });
 
 type ItemFormValues = z.infer<typeof itemSchema>;
@@ -83,6 +85,17 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
   const { user } = useUser();
   const firestore = useFirestore();
 
+  const itemsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'users', user.uid, 'items'));
+  }, [firestore, user]);
+
+  const { data: allItems } = useCollection<Item>(itemsQuery);
+
+  const masterProducts = useMemo(() => {
+    return allItems?.filter(i => !i.parentId) || [];
+  }, [allItems]);
+
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
     defaultValues: item
@@ -107,6 +120,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           category: 'Personal',
           contactName: '',
           contactValue: '',
+          parentId: null,
         },
   });
 
@@ -254,6 +268,42 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
         </div>
         
         <Separator />
+        
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Assignment</h3>
+          <FormField
+            control={form.control}
+            name="parentId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Assign from Master Product</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value || ''}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="None (This is a master product)" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="">
+                      None (This is a master product)
+                    </SelectItem>
+                    {masterProducts.map((product) => (
+                      <SelectItem key={product.id} value={product.id}>
+                        {product.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <Separator />
 
         <div className="space-y-4">
             <h3 className="text-lg font-medium">Credentials</h3>
@@ -319,7 +369,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
         <Separator />
         
         <div className="space-y-4">
-            <h3 className="text-lg font-medium">Comments</h3>
+            <h3 className="text-lg font-medium">Notes</h3>
             <FormField
               control={form.control}
               name="notes"
