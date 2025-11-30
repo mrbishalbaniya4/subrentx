@@ -1,27 +1,32 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { Suspense } from 'react';
 import { useUser } from '@/firebase';
+import { KanbanWrapper } from '@/components/kanban/kanban-wrapper';
 import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-export default function Home() {
+
+export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  
+  if (isUserLoading) {
+      return (
+        <div className="flex min-h-screen w-full items-center justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      );
+  }
 
-  useEffect(() => {
-    if (!isUserLoading) {
-      if (user) {
-        router.replace('/dashboard');
-      } else {
-        router.replace('/login');
-      }
-    }
-  }, [isUserLoading, user, router]);
+  if (!user) {
+    router.replace('/login');
+    return null;
+  }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-background">
-      <Loader2 className="h-12 w-12 animate-spin" />
-    </div>
+      <Suspense fallback={<div className="flex-1 p-6">Loading...</div>}>
+        <KanbanWrapper user={user} />
+      </Suspense>
   );
 }

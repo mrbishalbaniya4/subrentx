@@ -33,7 +33,9 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+            <div className="relative flex min-h-screen w-full flex-col">
+              {children}
+            </div>
             <Toaster />
           </ThemeProvider>
         </FirebaseClientProvider>

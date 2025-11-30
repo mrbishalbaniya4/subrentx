@@ -19,6 +19,11 @@ export function KanbanWrapper({ user }: { user: User }) {
   const [filterUrgency, setFilterUrgency] = useState<FilterUrgency>('all');
   const [sortBy, setSortBy] = useState<SortByType>('createdAt');
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const itemsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -125,7 +130,7 @@ export function KanbanWrapper({ user }: { user: User }) {
         onSortByChange={setSortBy}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
-        isClient={true}
+        isClient={isClient}
       />
       <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
         {renderView()}
