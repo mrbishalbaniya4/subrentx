@@ -155,7 +155,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
         if (selectedMaster) {
             form.setValue('name', selectedMaster.name);
             form.setValue('username', selectedMaster.username);
-            form.setValue('password', ''); 
+            form.setValue('password', selectedMaster.password || ''); 
             form.setValue('notes', '');
             form.setValue('category', selectedMaster.category);
         }
@@ -592,25 +592,6 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
           />
         </div>
 
-        <Separator />
-        
-        <div className="space-y-4">
-            <h3 className="text-lg font-medium">Notes</h3>
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Add any relevant comments here." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-        </div>
-        
         <Separator />
         
         <div className="space-y-4">
