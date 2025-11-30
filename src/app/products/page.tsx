@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Loader2, ArrowLeft, ShoppingBag } from 'lucide-react';
 import { ProductList } from '@/components/products/product-list';
@@ -18,10 +18,15 @@ export default function ProductsPage() {
 
   const itemsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
+    // Only fetch items that are master products (no parentId)
     return query(collection(firestore, 'users', user.uid, 'items'));
   }, [firestore, user]);
 
   const { data: items, isLoading: areItemsLoading } = useCollection<Item>(itemsQuery);
+
+  const masterProducts = useMemo(() => {
+    return items?.filter(item => !item.parentId) || [];
+  }, [items]);
 
   if (isUserLoading || (!items && areItemsLoading)) {
     return (
@@ -48,12 +53,12 @@ export default function ProductsPage() {
         <div className="flex items-center gap-2">
             <ShoppingBag className="h-6 w-6" />
             <h1 className="font-headline text-xl font-bold text-foreground">
-                Products
+                Master Products
             </h1>
         </div>
       </header>
       <main className="relative flex-1 overflow-auto p-4 md:p-6">
-        <ProductList items={items || []} />
+        <ProductList items={masterProducts} />
         <div className="fixed bottom-6 right-6 z-40">
            <AddItemButton />
         </div>

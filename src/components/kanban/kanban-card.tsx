@@ -53,6 +53,7 @@ import {
   RefreshCcw,
   ArrowRight,
   ArchiveRestore,
+  User,
 } from 'lucide-react';
 import { archiveItem, duplicateItem, updateItemStatus, deleteItem } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
@@ -262,6 +263,12 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
             onKeyDown={e => e.key === 'Enter' && setIsDialogOpen(true)}
           >
             <CardTitle className="text-lg font-headline">{item.name}</CardTitle>
+            {item.contactName && (
+                 <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <User className="h-4 w-4" />
+                    <span>{item.contactName}</span>
+                </div>
+            )}
           </div>
           {isClient && (
             <div

@@ -59,6 +59,10 @@
           "type": "string",
           "description": "Reference to User. (Relationship: User 1:N Item)"
         },
+        "parentId": {
+          "type": "string",
+          "description": "The ID of the master product this item is assigned from. Null if this is a master product."
+        },
         "name": {
           "type": "string",
           "description": "Name of the item (e.g., 'My Bank Account')."
@@ -101,15 +105,15 @@
         },
         "contactName": {
             "type": "string",
-            "description": "Name of the contact person."
+            "description": "Name of the person this item is assigned to."
         },
         "contactValue": {
             "type": "string",
-            "description": "Value associated with the contact (e.g., URL, phone number)."
+            "description": "Contact info for the assignee (e.g., URL, phone number)."
         },
         "purchasePrice": {
           "type": "number",
-          "description": "The price at which the item was purchased."
+          "description": "The price of this specific assignment/sale."
         },
         "archivedAt": {
           "type": "string",

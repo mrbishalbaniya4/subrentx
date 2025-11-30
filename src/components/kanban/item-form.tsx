@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -26,14 +27,16 @@ import { createItem, editItem } from '@/firebase/firestore/mutations';
 import { suggestDateAction, generatePasswordAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, WandSparkles, RefreshCw, Eye, EyeOff } from 'lucide-react';
-import { useState, useTransition, useMemo } from 'react';
-import { useFirestore, useUser } from '@/firebase';
+import { useState, useTransition, useMemo, useEffect } from 'react';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { format, addDays } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { collection } from 'firebase/firestore';
 
 const itemSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
+  parentId: z.string().optional().nullable(),
   username: z.string().optional(),
   password: z.string().optional(),
   pin: z.string().optional(),
@@ -84,11 +87,23 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
   const { user } = useUser();
   const firestore = useFirestore();
 
+  const itemsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return collection(firestore, 'users', user.uid, 'items');
+  }, [firestore, user]);
+
+  const { data: allItems } = useCollection<Item>(itemsQuery);
+
+  const masterProducts = useMemo(() => {
+    return allItems?.filter(item => !item.parentId) || [];
+  }, [allItems]);
+
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
     defaultValues: item
       ? {
           ...item,
+          parentId: item.parentId || 'none',
           startDate: item.startDate
             ? format(new Date(item.startDate), "yyyy-MM-dd'T'HH:mm")
             : '',
@@ -98,6 +113,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
         }
       : {
           name: '',
+          parentId: 'none',
           username: '',
           password: '',
           pin: '',
@@ -111,9 +127,26 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           purchasePrice: 0,
         },
   });
+  
+  const parentId = form.watch('parentId');
+
+  useEffect(() => {
+    if (parentId && parentId !== 'none' && !item) {
+        const selectedMaster = masterProducts.find(p => p.id === parentId);
+        if (selectedMaster) {
+            form.setValue('name', selectedMaster.name);
+            form.setValue('username', selectedMaster.username);
+            form.setValue('password', selectedMaster.password);
+            form.setValue('notes', selectedMaster.notes);
+            form.setValue('category', selectedMaster.category);
+        }
+    }
+  }, [parentId, masterProducts, form, item]);
 
   const password = form.watch('password') || '';
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
+  
+  const isMasterProduct = parentId === 'none';
 
   const onSubmit = (values: ItemFormValues) => {
     if (!user || !firestore) {
@@ -129,6 +162,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
       try {
         const itemData = {
             ...values,
+            parentId: values.parentId === 'none' ? null : values.parentId,
             startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
             endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
         };
@@ -213,7 +247,68 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        
         <div className="space-y-4">
+             <h3 className="text-lg font-medium">Assignment</h3>
+             <FormField
+                control={form.control}
+                name="parentId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assign from Master Product</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || 'none'}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a master product to assign..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">None (This is a master product)</SelectItem>
+                        {masterProducts.map(p => (
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {!isMasterProduct && (
+                <>
+                   <FormField
+                      control={form.control}
+                      name="contactName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Assignee Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., John Doe" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="contactValue"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Assignee Contact (Phone/URL)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="+1234567890 or https://..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </>
+              )}
+        </div>
+
+        <Separator />
+
+        <div className="space-y-4">
+             <h3 className="text-lg font-medium">{isMasterProduct ? "Product Details" : "Assignment Details"}</h3>
             <FormField
               control={form.control}
               name="name"
@@ -221,7 +316,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Netflix Subscription" {...field} />
+                    <Input placeholder="e.g., Netflix Subscription" {...field} disabled={!isMasterProduct && !!parentId} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -233,7 +328,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={!isMasterProduct && !!parentId}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
@@ -266,7 +361,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                   <FormItem>
                     <FormLabel>Username/Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="user@example.com" {...field} />
+                      <Input placeholder="user@example.com" {...field} disabled={!isMasterProduct && !!parentId}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -280,7 +375,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                     <FormLabel>Password</FormLabel>
                     <div className="relative">
                         <FormControl>
-                          <Input type={isPasswordVisible ? 'text' : 'password'} placeholder="••••••••" {...field} />
+                          <Input type={isPasswordVisible ? 'text' : 'password'} placeholder="••••••••" {...field} disabled={!isMasterProduct && !!parentId} />
                         </FormControl>
                         <div className="absolute right-1 top-1/2 flex -translate-y-1/2">
                             <Button
@@ -290,6 +385,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                                 className="h-7 w-7 text-muted-foreground"
                                 onClick={() => setIsPasswordVisible(prev => !prev)}
                                 aria-label="Toggle password visibility"
+                                disabled={!isMasterProduct && !!parentId}
                             >
                                 {isPasswordVisible ? <EyeOff /> : <Eye />}
                             </Button>
@@ -299,7 +395,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                                 variant="ghost"
                                 className="h-7 w-7 text-accent"
                                 onClick={handleGeneratePassword}
-                                disabled={isGenerating}
+                                disabled={isGenerating || (!isMasterProduct && !!parentId)}
                                 aria-label="Generate Password"
                             >
                                 {isGenerating ? <Loader2 className="animate-spin" /> : <RefreshCw />}
@@ -327,10 +423,13 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
             name="purchasePrice"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Purchase Price</FormLabel>
+                <FormLabel>{isMasterProduct ? "Default Price" : "Sale Price"}</FormLabel>
                 <FormControl>
                   <Input type="number" placeholder="0.00" {...field} />
                 </FormControl>
+                 <FormDescription>
+                    {isMasterProduct ? "The default price for this master product." : "The price for this specific assignment."}
+                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -348,7 +447,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                 <FormItem>
                   <FormLabel>Notes</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Add any relevant comments here." {...field} />
+                    <Textarea placeholder="Add any relevant comments here." {...field} disabled={!isMasterProduct && !!parentId} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -427,7 +526,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
             </Button>
             <Button type="submit" disabled={isPending}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {item ? 'Save Changes' : 'Save Item'}
+                {item ? 'Save Changes' : (isMasterProduct ? 'Save Master Product' : 'Save Assignment')}
             </Button>
         </div>
       </form>

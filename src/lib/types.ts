@@ -11,6 +11,7 @@ export type ViewMode = 'kanban' | 'grid' | 'list';
 export interface Item {
   id: string;
   userId: string;
+  parentId?: string | null;
   name: string;
   username?: string;
   password?: string;

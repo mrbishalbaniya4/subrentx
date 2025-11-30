@@ -32,11 +32,15 @@ export function KanbanWrapper({ user }: { user: User }) {
 
   const { data: allItems } = useCollection<Item>(itemsQuery);
 
+  const assignedItems = useMemo(() => {
+    return allItems?.filter(item => !!item.parentId) || [];
+  }, [allItems]);
+
   useEffect(() => {
-    if (!allItems || !firestore || !user) return;
+    if (!assignedItems || !firestore || !user) return;
 
     const now = new Date();
-    allItems.forEach(item => {
+    assignedItems.forEach(item => {
       if (item.endDate && item.status !== 'Expired' && item.status !== 'Archived') {
         const endDate = new Date(item.endDate);
         if (isPast(endDate)) {
@@ -47,12 +51,12 @@ export function KanbanWrapper({ user }: { user: User }) {
     });
     // This effect should only run when the items from the server change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allItems]);
+  }, [assignedItems]);
 
   const processedItems = useMemo(() => {
-    if (!allItems) return [];
+    if (!assignedItems) return [];
     
-    let items = [...allItems];
+    let items = [...assignedItems];
 
     // 1. Filter by Search Query
     if (searchQuery) {
@@ -61,7 +65,8 @@ export function KanbanWrapper({ user }: { user: User }) {
         (item) =>
           item.name.toLowerCase().includes(lowercasedQuery) ||
           item.username?.toLowerCase().includes(lowercasedQuery) ||
-          item.notes?.toLowerCase().includes(lowercasedQuery)
+          item.notes?.toLowerCase().includes(lowercasedQuery) ||
+          item.contactName?.toLowerCase().includes(lowercasedQuery)
       );
     }
     
@@ -101,7 +106,7 @@ export function KanbanWrapper({ user }: { user: User }) {
     }
 
     return items;
-  }, [allItems, searchQuery, filterCategory, filterUrgency, sortBy]);
+  }, [assignedItems, searchQuery, filterCategory, filterUrgency, sortBy]);
   
   const renderView = () => {
     const activeItems = processedItems.filter(item => item.status !== 'Archived');
