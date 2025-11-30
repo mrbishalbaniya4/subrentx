@@ -54,6 +54,9 @@ import {
   ArrowRight,
   ArchiveRestore,
   User,
+  TrendingUp,
+  TrendingDown,
+  Minus,
 } from 'lucide-react';
 import { archiveItem, duplicateItem, updateItemStatus, deleteItem } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
@@ -241,6 +244,34 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
       </Badge>
     );
   };
+  
+  const getProfitLossBadge = () => {
+    if (typeof item.masterPrice !== 'number' || typeof item.purchasePrice !== 'number') {
+      return null;
+    }
+  
+    const profit = item.purchasePrice - item.masterPrice;
+    const isProfit = profit > 0;
+    const isLoss = profit < 0;
+    
+    let badgeClass = 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-300';
+    let Icon = Minus;
+
+    if (isProfit) {
+        badgeClass = 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300';
+        Icon = TrendingUp;
+    } else if (isLoss) {
+        badgeClass = 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-300';
+        Icon = TrendingDown;
+    }
+    
+    return (
+      <Badge variant="outline" className={cn('flex items-center gap-1.5', badgeClass)}>
+        <Icon className="h-3 w-3" />
+        <span>Profit: ${profit.toFixed(2)}</span>
+      </Badge>
+    );
+  }
 
   const itemType = item.parentId ? 'assigned' : 'master';
 
@@ -394,6 +425,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
             )}
 
             {getUrgencyBadge()}
+            {getProfitLossBadge()}
            </div>
 
             <div className="flex items-center gap-1.5 pt-2 text-xs text-muted-foreground">

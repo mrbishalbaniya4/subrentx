@@ -49,7 +49,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Item",
       "type": "object",
-      "description": "Represents a stored item in the user's vault.",
+      "description": "Represents a stored item. Can be a 'master product' (if parentId is null) or an 'assigned item' (if parentId is set).",
       "properties": {
         "id": {
           "type": "string",
@@ -113,7 +113,11 @@
         },
         "purchasePrice": {
           "type": "number",
-          "description": "The price of this specific assignment/sale."
+          "description": "For a master product, this is the cost. For an assigned item, this is the sale price."
+        },
+        "masterPrice": {
+          "type": "number",
+          "description": "For an assigned item, this stores the original cost from its master product to calculate profit/loss."
         },
         "archivedAt": {
           "type": "string",

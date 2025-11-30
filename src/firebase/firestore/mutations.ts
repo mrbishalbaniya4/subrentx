@@ -61,10 +61,22 @@ export async function createItem(
   itemData: ItemFormData
 ): Promise<string> {
     const itemsCollection = collection(firestore, `users/${userId}/items`);
+    
+    let masterPrice = null;
+    // If creating an assignment, fetch the master product's price
+    if (itemData.parentId && itemData.parentId !== 'none') {
+        const masterDocRef = doc(firestore, `users/${userId}/items/${itemData.parentId}`);
+        const masterDocSnap = await getDoc(masterDocRef);
+        if (masterDocSnap.exists()) {
+            masterPrice = masterDocSnap.data().purchasePrice || 0;
+        }
+    }
+    
     const dataToSave = {
       ...itemData,
       userId: userId,
       status: 'Active' as const,
+      masterPrice: masterPrice,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
