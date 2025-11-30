@@ -28,6 +28,7 @@ interface HeaderProps {
   viewMode: ViewMode;
   onViewModeChange: (viewMode: ViewMode) => void;
   isClient: boolean;
+  itemType: 'master' | 'assigned';
 }
 
 export function Header({
@@ -41,7 +42,8 @@ export function Header({
   onSortByChange,
   viewMode,
   onViewModeChange,
-  isClient
+  isClient,
+  itemType
 }: HeaderProps) {
   const { user } = useUser();
 
@@ -143,7 +145,7 @@ export function Header({
         )}
 
         <div className="ml-auto flex items-center gap-2">
-          {user && <AddItemButton />}
+          {user && <AddItemButton itemType={itemType} />}
           <UserNav />
         </div>
       </header>

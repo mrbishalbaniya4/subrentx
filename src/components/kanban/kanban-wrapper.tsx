@@ -54,21 +54,17 @@ export function KanbanWrapper({ user, itemType }: KanbanWrapperProps) {
       if (item.endDate && item.status !== 'Expired' && item.status !== 'Archived') {
         const endDate = new Date(item.endDate);
         if (isPast(endDate)) {
-          // Fire-and-forget update. The real-time listener will handle the UI change.
           updateItemStatus(firestore, user.uid, item.id, 'Expired');
         }
       }
     });
-    // This effect should only run when the items from the server change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredItems, itemType]);
+  }, [filteredItems, firestore, user, itemType]);
 
   const processedItems = useMemo(() => {
     if (!filteredItems) return [];
     
     let items = [...filteredItems];
 
-    // 1. Filter by Search Query
     if (searchQuery) {
       const lowercasedQuery = searchQuery.toLowerCase();
       items = items.filter(
@@ -80,12 +76,10 @@ export function KanbanWrapper({ user, itemType }: KanbanWrapperProps) {
       );
     }
     
-    // 2. Filter by Category
     if (filterCategory !== 'all') {
       items = items.filter(item => item.category === filterCategory);
     }
 
-    // 3. Filter by Urgency
     if (filterUrgency === 'soon-to-expire') {
       const now = new Date();
       const nextWeek = addDays(now, 7);
@@ -98,7 +92,6 @@ export function KanbanWrapper({ user, itemType }: KanbanWrapperProps) {
       items = items.filter(item => item.endDate && isPast(new Date(item.endDate)));
     }
     
-    // 4. Sort
     if (sortBy === 'alphabetical') {
       items.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortBy === 'endDate') {
@@ -111,7 +104,7 @@ export function KanbanWrapper({ user, itemType }: KanbanWrapperProps) {
        items.sort((a, b) => {
         const timeA = a.createdAt?.seconds ? a.createdAt.toMillis() : 0;
         const timeB = b.createdAt?.seconds ? b.createdAt.toMillis() : 0;
-        return timeB - timeA; // Most recent first
+        return timeB - timeA;
       });
     }
 
@@ -122,11 +115,9 @@ export function KanbanWrapper({ user, itemType }: KanbanWrapperProps) {
     const activeItems = processedItems.filter(item => item.status !== 'Archived');
     
     if (itemType === 'master') {
-       // For master products, we override the views to use ProductList for list and grid
-       // Kanban doesn't make as much sense here.
        switch (viewMode) {
             case 'grid':
-                return <GridView items={processedItems || []} />; // Or a dedicated product grid
+                return <GridView items={processedItems || []} />;
             case 'list':
             default:
                 return <ProductList items={processedItems || []} />;
@@ -159,6 +150,7 @@ export function KanbanWrapper({ user, itemType }: KanbanWrapperProps) {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         isClient={isClient}
+        itemType={itemType}
       />
       <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
         {renderView()}

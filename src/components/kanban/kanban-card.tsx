@@ -242,6 +242,8 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     );
   };
 
+  const itemType = item.parentId ? 'assigned' : 'master';
+
   return (
     <>
       <Card
@@ -409,7 +411,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
               Update the details below. Click save when you're done.
             </DialogDescription>
           </DialogHeader>
-          <ItemForm item={item} setDialogOpen={setIsDialogOpen} />
+          <ItemForm item={item} setDialogOpen={setIsDialogOpen} itemType={itemType} />
         </DialogContent>
       </Dialog>
 

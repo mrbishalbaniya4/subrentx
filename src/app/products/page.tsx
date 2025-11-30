@@ -43,7 +43,7 @@ export default function ProductsPage() {
                 </h1>
             </div>
             <div className="ml-auto">
-                 <AddItemButton />
+                 <AddItemButton itemType="master" />
             </div>
         </header>
         <Suspense fallback={<div className="flex-1 p-6">Loading...</div>}>

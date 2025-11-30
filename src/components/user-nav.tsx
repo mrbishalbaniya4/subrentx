@@ -103,7 +103,7 @@ export function UserNav() {
             </DropdownMenuItem>
              <DropdownMenuItem onClick={() => router.push('/products')}>
               <ShoppingBag className="mr-2 h-4 w-4" />
-              <span>Products</span>
+              <span>Master Products</span>
             </DropdownMenuItem>
              <DropdownMenuItem onClick={() => router.push('/activity-log')}>
               <History className="mr-2 h-4 w-4" />
