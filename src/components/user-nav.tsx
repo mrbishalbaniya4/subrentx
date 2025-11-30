@@ -9,6 +9,7 @@ import {
   Moon,
   Sun,
   Monitor,
+  ShoppingBag
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -99,6 +100,10 @@ export function UserNav() {
             <DropdownMenuItem onClick={() => alert('Profile page coming soon!')}>
               <UserIcon className="mr-2 h-4 w-4" />
               <span>Profile</span>
+            </DropdownMenuItem>
+             <DropdownMenuItem onClick={() => router.push('/products')}>
+              <ShoppingBag className="mr-2 h-4 w-4" />
+              <span>Products</span>
             </DropdownMenuItem>
              <DropdownMenuItem onClick={() => router.push('/activity-log')}>
               <History className="mr-2 h-4 w-4" />
