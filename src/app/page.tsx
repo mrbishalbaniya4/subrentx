@@ -26,7 +26,7 @@ export default function DashboardPage() {
 
   return (
       <Suspense fallback={<div className="flex-1 p-6">Loading...</div>}>
-        <KanbanWrapper user={user} />
+        <KanbanWrapper user={user} itemType="assigned" />
       </Suspense>
   );
 }

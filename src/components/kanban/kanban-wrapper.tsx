@@ -11,14 +11,20 @@ import type { Item, FilterCategory, FilterUrgency, SortByType, ViewMode } from '
 import { isPast, isWithinInterval, addDays } from 'date-fns';
 import type { User } from 'firebase/auth';
 import { updateItemStatus } from '@/firebase/firestore/mutations';
+import { ProductList } from '@/components/products/product-list';
 
-export function KanbanWrapper({ user }: { user: User }) {
+interface KanbanWrapperProps {
+    user: User;
+    itemType: 'master' | 'assigned';
+}
+
+export function KanbanWrapper({ user, itemType }: KanbanWrapperProps) {
   const firestore = useFirestore();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
   const [filterUrgency, setFilterUrgency] = useState<FilterUrgency>('all');
   const [sortBy, setSortBy] = useState<SortByType>('createdAt');
-  const [viewMode, setViewMode] = useState<ViewMode>('kanban');
+  const [viewMode, setViewMode] = useState<ViewMode>(itemType === 'master' ? 'list' : 'kanban');
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -32,15 +38,19 @@ export function KanbanWrapper({ user }: { user: User }) {
 
   const { data: allItems } = useCollection<Item>(itemsQuery);
 
-  const assignedItems = useMemo(() => {
-    return allItems?.filter(item => !!item.parentId) || [];
-  }, [allItems]);
+  const filteredItems = useMemo(() => {
+    if (!allItems) return [];
+    if (itemType === 'master') {
+      return allItems.filter(item => !item.parentId);
+    }
+    return allItems.filter(item => !!item.parentId);
+  }, [allItems, itemType]);
 
   useEffect(() => {
-    if (!assignedItems || !firestore || !user) return;
+    if (!filteredItems || !firestore || !user || itemType !== 'assigned') return;
 
     const now = new Date();
-    assignedItems.forEach(item => {
+    filteredItems.forEach(item => {
       if (item.endDate && item.status !== 'Expired' && item.status !== 'Archived') {
         const endDate = new Date(item.endDate);
         if (isPast(endDate)) {
@@ -51,12 +61,12 @@ export function KanbanWrapper({ user }: { user: User }) {
     });
     // This effect should only run when the items from the server change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assignedItems]);
+  }, [filteredItems, itemType]);
 
   const processedItems = useMemo(() => {
-    if (!assignedItems) return [];
+    if (!filteredItems) return [];
     
-    let items = [...assignedItems];
+    let items = [...filteredItems];
 
     // 1. Filter by Search Query
     if (searchQuery) {
@@ -106,10 +116,23 @@ export function KanbanWrapper({ user }: { user: User }) {
     }
 
     return items;
-  }, [assignedItems, searchQuery, filterCategory, filterUrgency, sortBy]);
+  }, [filteredItems, searchQuery, filterCategory, filterUrgency, sortBy]);
   
   const renderView = () => {
     const activeItems = processedItems.filter(item => item.status !== 'Archived');
+    
+    if (itemType === 'master') {
+       // For master products, we override the views to use ProductList for list and grid
+       // Kanban doesn't make as much sense here.
+       switch (viewMode) {
+            case 'grid':
+                return <GridView items={processedItems || []} />; // Or a dedicated product grid
+            case 'list':
+            default:
+                return <ProductList items={processedItems || []} />;
+       }
+    }
+
     switch (viewMode) {
       case 'kanban':
         return <KanbanBoard initialItems={processedItems || []} />;
