@@ -165,13 +165,13 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
   const isCreatingMaster = itemType === 'master' && !item;
   const isEditingMaster = !!(item && !item.parentId);
   const isMasterProductForm = isCreatingMaster || isEditingMaster;
-  const isAssignmentForm = !isMasterProductForm;
-
-  const isMasterProductSelection = !parentId || parentId === 'none';
-  const finalIsMasterProduct = (item && !item.parentId) || (!item && isMasterProductSelection);
   
   const isEditingAssignment = !!(item && item.parentId);
-
+  const isCreatingAssignment = !item && itemType === 'assigned';
+  const isAssignmentForm = isCreatingAssignment || isEditingAssignment;
+  
+  const isMasterProductSelection = !parentId || parentId === 'none';
+  const finalIsMasterProduct = (isCreatingMaster || isEditingMaster) || (isCreatingAssignment && isMasterProductSelection);
 
   const onSubmit = (values: ItemFormValues) => {
     if (!user || !firestore) {
@@ -282,7 +282,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Assign from Master Product</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || 'none'} disabled={!!item}>
+                  <Select onValueChange={field.onChange} value={field.value || 'none'} disabled={isEditingAssignment}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a master product to assign..." />
@@ -396,7 +396,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                   <FormItem>
                     <FormLabel>Username/Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="user@example.com" {...field} disabled={(!finalIsMasterProduct && !item) || isEditingAssignment}/>
+                      <Input placeholder="user@example.com" {...field} disabled={isEditingAssignment || (!finalIsMasterProduct && !isCreatingAssignment) }/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
