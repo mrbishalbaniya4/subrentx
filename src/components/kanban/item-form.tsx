@@ -29,7 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, WandSparkles, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useState, useTransition, useMemo, useEffect } from 'react';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { format, addDays } from 'date-fns';
+import { format, addDays, differenceInDays } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { collection } from 'firebase/firestore';
@@ -287,10 +287,18 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="none">None (This is a master product)</SelectItem>
-                      {availableMasterProducts.map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                      ))}
+                      <SelectItem value="none">None (Create a one-off item)</SelectItem>
+                      {availableMasterProducts.map(p => {
+                          const remainingDays = p.endDate ? differenceInDays(new Date(p.endDate), new Date()) : null;
+                          const daysText = remainingDays !== null 
+                              ? (remainingDays >= 0 ? `(${remainingDays} days remaining)` : '(Expired)')
+                              : '';
+                          return (
+                            <SelectItem key={p.id} value={p.id}>
+                                {p.name} {daysText}
+                            </SelectItem>
+                          )
+                      })}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -557,3 +565,5 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
     </Form>
   );
 }
+
+    
