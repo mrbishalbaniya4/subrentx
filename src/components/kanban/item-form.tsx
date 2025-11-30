@@ -94,9 +94,26 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
 
   const { data: allItems } = useCollection<Item>(itemsQuery);
 
-  const masterProducts = useMemo(() => {
-    return allItems?.filter(item => !item.parentId) || [];
-  }, [allItems]);
+  const availableMasterProducts = useMemo(() => {
+    if (!allItems) return [];
+    const masterProducts = allItems.filter(item => !item.parentId);
+    const activeAssignmentParentIds = new Set(
+      allItems
+        .filter(i => i.parentId && i.status === 'Active')
+        .map(i => i.parentId)
+    );
+
+    // If we are editing an item that is linked to a master product,
+    // that master product should still be in the list for editing purposes.
+    const currentItemParentId = item?.parentId;
+
+    return masterProducts.filter(p => {
+        if (p.id === currentItemParentId) {
+            return true;
+        }
+        return !activeAssignmentParentIds.has(p.id);
+    });
+  }, [allItems, item]);
 
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
@@ -132,7 +149,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
 
   useEffect(() => {
     if (parentId && parentId !== 'none' && !item) {
-        const selectedMaster = masterProducts.find(p => p.id === parentId);
+        const selectedMaster = availableMasterProducts.find(p => p.id === parentId);
         if (selectedMaster) {
             form.setValue('name', selectedMaster.name);
             form.setValue('username', selectedMaster.username);
@@ -141,7 +158,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
             form.setValue('category', selectedMaster.category);
         }
     }
-  }, [parentId, masterProducts, form, item]);
+  }, [parentId, availableMasterProducts, form, item]);
 
   const password = form.watch('password') || '';
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
@@ -264,7 +281,7 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">None (This is a master product)</SelectItem>
-                        {masterProducts.map(p => (
+                        {availableMasterProducts.map(p => (
                             <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                         ))}
                       </SelectContent>
