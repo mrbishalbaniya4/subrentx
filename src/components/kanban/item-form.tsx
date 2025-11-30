@@ -27,11 +27,10 @@ import { suggestDateAction, generatePasswordAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, WandSparkles, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useState, useTransition, useMemo } from 'react';
-import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { format, addDays } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import { collection, query } from 'firebase/firestore';
 
 const itemSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -45,7 +44,6 @@ const itemSchema = z.object({
   category: z.enum(['Work', 'Personal', 'Finance', 'Shopping', 'Social', 'Travel', 'Other']).optional(),
   contactName: z.string().optional(),
   contactValue: z.string().optional(),
-  parentId: z.string().optional().nullable(),
 });
 
 type ItemFormValues = z.infer<typeof itemSchema>;
@@ -85,17 +83,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const itemsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, 'users', user.uid, 'items'));
-  }, [firestore, user]);
-
-  const { data: allItems } = useCollection<Item>(itemsQuery);
-
-  const masterProducts = useMemo(() => {
-    return allItems?.filter(i => !i.parentId) || [];
-  }, [allItems]);
-
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
     defaultValues: item
@@ -107,7 +94,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           endDate: item.endDate
             ? format(new Date(item.endDate), "yyyy-MM-dd'T'HH:mm")
             : '',
-          parentId: item.parentId || 'none',
         }
       : {
           name: '',
@@ -121,7 +107,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
           category: 'Personal',
           contactName: '',
           contactValue: '',
-          parentId: 'none',
         },
   });
 
@@ -144,7 +129,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
             ...values,
             startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
             endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
-            parentId: values.parentId === 'none' ? null : values.parentId,
         };
         if (item) {
           await editItem(firestore, user.uid, { ...item, ...itemData });
@@ -269,42 +253,6 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
             />
         </div>
         
-        <Separator />
-        
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Assignment</h3>
-          <FormField
-            control={form.control}
-            name="parentId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Assign from Master Product</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value || 'none'}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="None (This is a master product)" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="none">
-                      None (This is a master product)
-                    </SelectItem>
-                    {masterProducts.map((product) => (
-                      <SelectItem key={product.id} value={product.id}>
-                        {product.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
         <Separator />
 
         <div className="space-y-4">
@@ -465,5 +413,3 @@ export function ItemForm({ item, setDialogOpen }: ItemFormProps) {
     </Form>
   );
 }
-
-    

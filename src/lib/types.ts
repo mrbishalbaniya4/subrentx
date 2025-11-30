@@ -25,7 +25,6 @@ export interface Item {
   archivedAt?: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  parentId?: string | null;
 }
 
 export type ActivityLogAction = 'created' | 'updated' | 'password_changed' | 'archived' | 'unarchived' | 'deleted';

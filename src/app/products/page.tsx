@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Loader2, ArrowLeft, ShoppingBag } from 'lucide-react';
 import { ProductList } from '@/components/products/product-list';
@@ -18,11 +18,7 @@ export default function ProductsPage() {
 
   const itemsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    // Query for items that are "master" products (don't have a parentId)
-    return query(
-        collection(firestore, 'users', user.uid, 'items'),
-        where('parentId', '==', null)
-    );
+    return query(collection(firestore, 'users', user.uid, 'items'));
   }, [firestore, user]);
 
   const { data: items, isLoading: areItemsLoading } = useCollection<Item>(itemsQuery);
@@ -52,7 +48,7 @@ export default function ProductsPage() {
         <div className="flex items-center gap-2">
             <ShoppingBag className="h-6 w-6" />
             <h1 className="font-headline text-xl font-bold text-foreground">
-                Master Products
+                Products
             </h1>
         </div>
       </header>
