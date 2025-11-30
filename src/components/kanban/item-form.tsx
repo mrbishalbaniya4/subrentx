@@ -168,7 +168,9 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
   const isAssignmentForm = !isMasterProductForm;
 
   const isMasterProductSelection = !parentId || parentId === 'none';
-  const finalIsMasterProduct = (item && !item.parentId) || (!item && isMasterProductSelection)
+  const finalIsMasterProduct = (item && !item.parentId) || (!item && isMasterProductSelection);
+  
+  const isEditingAssignment = !!(item && item.parentId);
 
 
   const onSubmit = (values: ItemFormValues) => {
@@ -314,7 +316,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                       <FormItem>
                         <FormLabel>Assignee Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., John Doe" {...field} />
+                          <Input placeholder="e.g., John Doe" {...field} disabled={isEditingAssignment} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -327,7 +329,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                       <FormItem>
                         <FormLabel>Assignee Contact (Phone/URL)</FormLabel>
                         <FormControl>
-                          <Input placeholder="+1234567890 or https://..." {...field} />
+                          <Input placeholder="+1234567890 or https://..." {...field} disabled={isEditingAssignment} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -349,7 +351,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Netflix Subscription" {...field} disabled={!finalIsMasterProduct} />
+                    <Input placeholder="e.g., Netflix Subscription" {...field} disabled={!finalIsMasterProduct || isEditingAssignment} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -361,7 +363,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={!finalIsMasterProduct}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={!finalIsMasterProduct || isEditingAssignment}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
@@ -394,7 +396,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                   <FormItem>
                     <FormLabel>Username/Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="user@example.com" {...field} disabled={!finalIsMasterProduct}/>
+                      <Input placeholder="user@example.com" {...field} disabled={(!finalIsMasterProduct && !item) || isEditingAssignment}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -457,7 +459,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
               <FormItem>
                 <FormLabel>{finalIsMasterProduct ? "Default Price" : "Sale Price"}</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="0.00" {...field} />
+                  <Input type="number" placeholder="0.00" {...field} disabled={isEditingAssignment} />
                 </FormControl>
                  <FormDescription>
                     {finalIsMasterProduct ? "The default price for this master product." : "The price for this specific assignment."}
@@ -499,7 +501,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                   <FormItem>
                     <FormLabel>Start Date</FormLabel>
                     <FormControl>
-                      <Input type="datetime-local" {...field} />
+                      <Input type="datetime-local" {...field} disabled={isEditingAssignment} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -513,7 +515,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                     <FormLabel>End Date</FormLabel>
                     <div className="relative">
                       <FormControl>
-                        <Input type="datetime-local" {...field} />
+                        <Input type="datetime-local" {...field} disabled={isEditingAssignment} />
                       </FormControl>
                       <Button
                         type="button"
@@ -521,7 +523,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                         variant="ghost"
                         className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-accent"
                         onClick={handleSuggestDate}
-                        disabled={isSuggesting}
+                        disabled={isSuggesting || isEditingAssignment}
                         aria-label="Suggest End Date"
                       >
                         {isSuggesting ? (
@@ -541,6 +543,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                           size="sm"
                           onClick={() => setEndDateInDays(days)}
                           className="text-xs"
+                          disabled={isEditingAssignment}
                         >
                           {days}d
                         </Button>
@@ -565,5 +568,3 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
     </Form>
   );
 }
-
-    
