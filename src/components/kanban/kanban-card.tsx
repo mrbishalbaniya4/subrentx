@@ -59,6 +59,7 @@ import {
   Minus,
   Info,
   ShieldCheck,
+  DollarSign,
 } from 'lucide-react';
 import { archiveItem, duplicateItem, updateItemStatus, deleteItem } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
@@ -247,18 +248,31 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
 
   const childrenQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    const masterId = item.parentId || item.id;
+    const masterId = item.id; // We only care about children for master products
     return query(
       collection(firestore, `users/${user.uid}/items`),
       where('parentId', '==', masterId)
     );
-  }, [firestore, user, item.id, item.parentId]);
+  }, [firestore, user, item.id]);
 
   const { data: childItems } = useCollection<Item>(childrenQuery);
   
-  // For a master product, count its direct children.
-  // For an assigned item, we also want the count of its siblings (all children of its parent).
   const assignmentCount = childItems?.length || 0;
+
+  const totalProfit = useMemo(() => {
+    if (itemType !== 'master' || !childItems) return 0;
+
+    return childItems.reduce((acc, child) => {
+        const salePrice = child.purchasePrice || 0;
+        const cost = child.masterPrice || 0;
+        // We only consider profit from completed/sold items
+        if (child.status === 'Expired' || child.status === 'Archived') {
+            return acc + (salePrice - cost);
+        }
+        return acc;
+    }, 0);
+  }, [childItems, itemType]);
+
 
 
   const masterExpirationInfo = () => {
@@ -453,9 +467,24 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                     <CardTitle className="text-lg font-headline">Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col justify-center items-center p-4 text-center">
-                    <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Total Assignments</p>
-                        <p className="text-4xl font-bold">{assignmentCount}</p>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1 text-center">
+                            <p className="text-sm text-muted-foreground">Assignments</p>
+                            <p className="text-3xl font-bold">{assignmentCount}</p>
+                        </div>
+                         {itemType === 'master' && (
+                            <div className="space-y-1 text-center">
+                                <p className="text-sm text-muted-foreground">Total Profit</p>
+                                <p className={cn(
+                                    "text-3xl font-bold flex items-center justify-center gap-1",
+                                    totalProfit > 0 && "text-green-600",
+                                    totalProfit < 0 && "text-red-600"
+                                )}>
+                                    <DollarSign className="h-6 w-6" />
+                                    {totalProfit.toFixed(2)}
+                                </p>
+                            </div>
+                         )}
                     </div>
                 </CardContent>
                 <CardFooter className="p-2 pt-0">
