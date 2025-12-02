@@ -86,6 +86,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [lastGenerated, setLastGenerated] = useState<Date | null>(null);
   const { user } = useUser();
   const firestore = useFirestore();
 
@@ -172,7 +173,6 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
   const isMasterProductSelection = !parentId || parentId === 'none';
   const finalIsMasterProduct = (isMasterProductForm) || (isCreatingAssignment && isMasterProductSelection);
   
-  // This logic was flawed. Now dates are only disabled when editing an EXISTING assignment.
   const datesAreDisabled = !!(item && item.parentId);
 
 
@@ -250,6 +250,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
       const result = await generatePasswordAction();
       if (result.password) {
         form.setValue('password', result.password, { shouldValidate: true });
+        setLastGenerated(new Date());
         toast({
           title: 'Password Generated',
           description: 'A new strong password has been set.',
@@ -444,6 +445,11 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                         <p className="text-xs font-medium text-muted-foreground">
                             {strengthLabels[passwordStrength]}
                         </p>
+                        {lastGenerated && (
+                            <p className="text-xs text-muted-foreground">
+                                Last generated: {format(lastGenerated, 'PPp')}
+                            </p>
+                        )}
                     </div>
                     <FormMessage />
                   </FormItem>
