@@ -29,7 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, WandSparkles, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useState, useTransition, useMemo, useEffect } from 'react';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { format, addDays, differenceInDays, isWithinInterval, parseISO } from 'date-fns';
+import { format, addDays, differenceInDays, isWithinInterval, parseISO, isValid } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { collection } from 'firebase/firestore';
@@ -108,10 +108,10 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
       ? {
           ...item,
           parentId: item.parentId || null,
-          startDate: item.startDate
+          startDate: item.startDate && isValid(new Date(item.startDate))
             ? format(new Date(item.startDate), "yyyy-MM-dd'T'HH:mm")
             : '',
-          endDate: item.endDate
+          endDate: item.endDate && isValid(new Date(item.endDate))
             ? format(new Date(item.endDate), "yyyy-MM-dd'T'HH:mm")
             : '',
         }
@@ -122,7 +122,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
           password: '',
           pin: '',
           notes: '',
-          startDate: format(new Date(), "yyyy-MM-dd'T'HHmm"),
+          startDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
           endDate: '',
           status: 'Active',
           category: 'Personal',
@@ -143,7 +143,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
             form.setValue('username', selectedMaster.username);
             form.setValue('password', selectedMaster.password || ''); 
             form.setValue('category', selectedMaster.category);
-            form.setValue('purchasePrice', selectedMaster.purchasePrice); // Inherit price
+            // Do not inherit purchase price for assignments, user should set sale price
         }
     }
   }, [parentId, availableMasterProducts, form, item, itemType]);
@@ -152,7 +152,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
   
   // Is this form for a master product? (creating a new one or editing an existing one)
-  const isMasterProductForm = itemType === 'master' || (item && !item.parentId);
+  const isMasterProductForm = itemType === 'master';
   
   // Are we creating a new assignment?
   const isCreatingAssignment = itemType === 'assigned' && !item;
@@ -164,9 +164,9 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     }
 
     // Date validation for sub-products
-    if (values.parentId) {
+    if (values.parentId && values.startDate && values.endDate) {
       const master = availableMasterProducts.find(p => p.id === values.parentId);
-      if (master && master.startDate && master.endDate && values.startDate && values.endDate) {
+      if (master && master.startDate && master.endDate) {
         const masterStart = parseISO(master.startDate);
         const masterEnd = parseISO(master.endDate);
         const subStart = parseISO(values.startDate);
@@ -184,8 +184,8 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
         const itemData: Partial<Item> = {
             ...values,
             parentId: isMasterProductForm ? null : values.parentId,
-            startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
-            endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
+            startDate: values.startDate && isValid(new Date(values.startDate)) ? new Date(values.startDate).toISOString() : '',
+            endDate: values.endDate && isValid(new Date(values.endDate)) ? new Date(values.endDate).toISOString() : '',
         };
 
         if (passwordChanged) {
@@ -292,7 +292,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
                     </FormControl>
                     <SelectContent>
                       {availableMasterProducts.map(p => {
-                          const remainingDays = p.endDate ? differenceInDays(new Date(p.endDate), new Date()) : null;
+                          const remainingDays = p.endDate && isValid(new Date(p.endDate)) ? differenceInDays(new Date(p.endDate), new Date()) : null;
                           const daysText = remainingDays !== null 
                               ? (remainingDays >= 0 ? `(${remainingDays} days remaining)` : '(Expired)')
                               : '';
