@@ -5,14 +5,63 @@ import React, { useEffect, useMemo } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { Loader2, Package, HandCoins, TrendingUp, PackageMinus } from 'lucide-react';
+import { Loader2, Package, HandCoins, TrendingUp, PackageMinus, CalendarClock, List } from 'lucide-react';
 import { AppLayout } from '@/components/app-layout';
 import type { Item } from '@/lib/types';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { SummaryCharts } from '@/components/summary/summary-charts';
+import { format, formatDistanceToNow } from 'date-fns';
+
+function UnassignedItemsList({ items }: { items: Item[] }) {
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <List className="h-5 w-5" />
+          Available for Rent
+        </CardTitle>
+        <CardDescription>
+          These master products are active and not currently assigned to a rental.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {items.map(item => {
+            const distanceText = item.endDate 
+              ? formatDistanceToNow(new Date(item.endDate), { addSuffix: true })
+              : 'N/A';
+            const fullDate = item.endDate 
+              ? format(new Date(item.endDate), 'PPp')
+              : '';
+
+            return (
+              <div key={item.id} className="flex items-center justify-between rounded-md border p-4">
+                <div>
+                  <p className="font-semibold">{item.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Cost: Rs {item.purchasePrice?.toFixed(2) ?? '0.00'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground" title={fullDate}>
+                  <CalendarClock className="h-4 w-4" />
+                  <span>Expires {distanceText}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 function SummaryContent({ items }: { items: Item[] }) {
-  const { totalProfit, totalMasters, activeRentals, unassignedMasters } = useMemo(() => {
+  const { totalProfit, totalMasters, activeRentals, unassignedMasters, unassignedMasterItems } = useMemo(() => {
     const masterProducts = items.filter(item => !item.parentId);
     const assignedItems = items.filter(item => !!item.parentId);
 
@@ -26,9 +75,11 @@ function SummaryContent({ items }: { items: Item[] }) {
     const activeRentals = activeAssignedItems.length;
     
     const activelyAssignedMasterIds = new Set(activeAssignedItems.map(item => item.parentId));
-    const unassignedMasters = masterProducts.filter(p => !activelyAssignedMasterIds.has(p.id)).length;
+    const unassignedMasterItems = masterProducts.filter(p => !activelyAssignedMasterIds.has(p.id) && p.status === 'Active');
+    const unassignedMasters = unassignedMasterItems.length;
 
-    return { totalProfit, totalMasters, activeRentals, unassignedMasters };
+
+    return { totalProfit, totalMasters, activeRentals, unassignedMasters, unassignedMasterItems };
   }, [items]);
 
   return (
@@ -77,8 +128,9 @@ function SummaryContent({ items }: { items: Item[] }) {
           </CardContent>
         </Card>
       </div>
-      <div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SummaryCharts items={items} />
+        <UnassignedItemsList items={unassignedMasterItems} />
       </div>
     </main>
   );
