@@ -24,12 +24,12 @@ export default function RentalPage() {
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.replace('/login');
-    } else if (userProfile && userProfile.status.trim() === 'pending') {
+    } else if (userProfile && userProfile.status === 'pending') {
       router.replace('/awaiting-approval');
     }
   }, [isUserLoading, user, userProfile, router]);
 
-  if (isUserLoading || !user || isProfileLoading || !userProfile || userProfile.status.trim() !== 'active') {
+  if (isUserLoading || !user || isProfileLoading || !userProfile || userProfile.status !== 'active') {
       return (
         <div className="flex min-h-screen w-full items-center justify-center">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
