@@ -29,7 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, WandSparkles, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useState, useTransition, useMemo, useEffect } from 'react';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { format, addDays, differenceInDays, isWithinInterval, parseISO, isValid } from 'date-fns';
+import { format, addDays, differenceInDays, isWithinInterval, parseISO, isValid, isPast } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { collection } from 'firebase/firestore';
@@ -99,7 +99,12 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
 
   const availableMasterProducts = useMemo(() => {
     if (!allItems) return [];
-    return allItems.filter(item => !item.parentId && item.status === 'Active');
+    return allItems.filter(item => 
+        !item.parentId && 
+        item.status === 'Active' &&
+        item.endDate && 
+        !isPast(new Date(item.endDate))
+    );
   }, [allItems]);
 
   const form = useForm<ItemFormValues>({
@@ -143,7 +148,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
             form.setValue('username', selectedMaster.username);
             form.setValue('password', selectedMaster.password || ''); 
             form.setValue('category', selectedMaster.category);
-            // Do not inherit purchase price for assignments, user should set sale price
+            form.setValue('purchasePrice', selectedMaster.purchasePrice);
         }
     }
   }, [parentId, availableMasterProducts, form, item, itemType]);
@@ -397,7 +402,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
                   <FormItem>
                     <FormLabel>Username/Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="user@example.com" {...field} disabled={!!parentId && !isMasterProductForm }/>
+                      <Input placeholder="user@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -544,3 +549,5 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     </Form>
   );
 }
+
+    
