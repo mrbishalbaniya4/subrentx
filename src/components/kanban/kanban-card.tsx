@@ -238,34 +238,6 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     );
   };
   
-  const getProfitLossBadge = () => {
-    if (typeof item.masterPrice !== 'number' || typeof item.purchasePrice !== 'number') {
-      return null;
-    }
-  
-    const profit = item.purchasePrice - item.masterPrice;
-    const isProfit = profit > 0;
-    const isLoss = profit < 0;
-    
-    let badgeClass = 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-300';
-    let Icon = Minus;
-
-    if (isProfit) {
-        badgeClass = 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300';
-        Icon = TrendingUp;
-    } else if (isLoss) {
-        badgeClass = 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-300';
-        Icon = TrendingDown;
-    }
-    
-    return (
-      <Badge variant="outline" className={cn('flex items-center gap-1.5', badgeClass)}>
-        <Icon className="h-3 w-3" />
-        <span>Profit: ${profit.toFixed(2)}</span>
-      </Badge>
-    );
-  }
-
   const itemType = item.parentId ? 'assigned' : 'master';
 
   return (
@@ -274,8 +246,8 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
         ref={setNodeRef}
         style={style}
         className={cn(
-          'group touch-none',
-          isDragging && 'opacity-50',
+          'group/card touch-none relative',
+          isDragging && 'opacity-50 z-50',
           isOverlay && 'shadow-2xl'
         )}
         {...attributes}
@@ -408,7 +380,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
           )}
           
           <div className="flex flex-wrap items-center gap-2">
-            {item.category && (
+             {item.category && (
                 <Badge variant="outline" className={cn(categoryColors[item.category])}>
                     {item.category}
                 </Badge>
