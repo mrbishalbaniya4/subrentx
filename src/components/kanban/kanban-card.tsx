@@ -299,7 +299,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
           </div>
           <div
             {...listeners}
-            className="cursor-grab p-1 text-muted-foreground transition-opacity hover:opacity-80 group-hover:opacity-100 md:opacity-0"
+            className="cursor-grab p-1 text-muted-foreground transition-opacity hover:opacity-80"
           >
             <GripVertical className="h-5 w-5" />
           </div>
@@ -487,5 +487,3 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     </>
   );
 }
-
-    
