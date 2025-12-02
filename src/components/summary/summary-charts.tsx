@@ -6,11 +6,18 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Responsive
 import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { Item } from '@/lib/types';
-import { ChartTooltipContent } from '@/components/ui/chart';
+import { ChartTooltipContent, ChartContainer, type ChartConfig } from '@/components/ui/chart';
 
 interface SummaryChartsProps {
   items: Item[];
 }
+
+const chartConfig = {
+  profit: {
+    label: 'Profit',
+    color: 'hsl(var(--chart-1))',
+  },
+} satisfies ChartConfig;
 
 export function SummaryCharts({ items }: SummaryChartsProps) {
   const monthlyProfitData = React.useMemo(() => {
@@ -46,8 +53,8 @@ export function SummaryCharts({ items }: SummaryChartsProps) {
         <CardDescription>A summary of profit generated from completed rentals each month.</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={monthlyProfitData}>
+        <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+            <BarChart accessibilityLayer data={monthlyProfitData}>
                  <CartesianGrid vertical={false} />
                 <XAxis
                     dataKey="month"
@@ -73,7 +80,7 @@ export function SummaryCharts({ items }: SummaryChartsProps) {
                  <Legend />
                 <Bar dataKey="profit" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
             </BarChart>
-        </ResponsiveContainer>
+        </ChartContainer>
       </CardContent>
     </Card>
   );
