@@ -60,6 +60,7 @@ import {
   Info,
   ShieldCheck,
   DollarSign,
+  Bell,
 } from 'lucide-react';
 import { archiveItem, duplicateItem, updateItemStatus, deleteItem } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
@@ -276,6 +277,10 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     }, 0);
   }, [childItems, itemType]);
 
+  const hasExpiredChild = useMemo(() => {
+    if (itemType !== 'master' || !childItems) return false;
+    return childItems.some(child => child.status === 'Expired');
+  }, [childItems, itemType]);
 
 
   const masterExpirationInfo = () => {
@@ -447,6 +452,12 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                         </Badge>
                     )}
                     {getUrgencyBadge()}
+                     {hasExpiredChild && (
+                        <Badge variant="outline" className="flex items-center gap-1.5 border-orange-200 bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
+                            <Bell className="h-3 w-3" />
+                            <span>Rental Expired</span>
+                        </Badge>
+                     )}
                    </div>
                    
                    {masterExpirationInfo()}
