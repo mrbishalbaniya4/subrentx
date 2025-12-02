@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,9 +26,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Item } from '@/lib/types';
 import { createItem, editItem } from '@/firebase/firestore/mutations';
-import { suggestDateAction, generatePasswordAction } from '@/app/actions';
+import { generatePasswordAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, WandSparkles, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { Loader2, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useState, useTransition, useMemo, useEffect } from 'react';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { format, addDays, differenceInDays, isWithinInterval, parseISO, isValid, isPast } from 'date-fns';
@@ -104,7 +105,6 @@ const formatCountdown = (endDate: string | undefined): string | null => {
 export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
-  const [isSuggesting, setIsSuggesting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [passwordChanged, setPasswordChanged] = useState(false);
@@ -257,37 +257,6 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     });
   };
 
-  const handleSuggestDate = () => {
-    const itemName = form.getValues('name');
-    if (!itemName) {
-      form.setError('name', { message: 'Please enter a name first.' });
-      return;
-    }
-    setIsSuggesting(true);
-    startTransition(async () => {
-      const result = await suggestDateAction(itemName);
-      if (result.suggestedDate) {
-        const currentDate = form.getValues('endDate') ? new Date(form.getValues('endDate')!) : new Date();
-        const time = format(currentDate, 'HH:mm');
-        const suggestedDateTime = `${result.suggestedDate}T${time}`;
-        form.setValue('endDate', suggestedDateTime, {
-          shouldValidate: true,
-        });
-        toast({
-          title: 'Date Suggested',
-          description: `End date set to ${format(new Date(suggestedDateTime), 'MMM d, yyyy HH:mm')}`,
-        });
-      } else if (result.error) {
-        toast({
-          variant: 'destructive',
-          title: 'Suggestion Failed',
-          description: result.error,
-        });
-      }
-      setIsSuggesting(false);
-    });
-  };
-  
   const handleGeneratePassword = () => {
     setIsGenerating(true);
     startTransition(async () => {
@@ -609,9 +578,6 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
                       <FormControl>
                         <Input type="datetime-local" {...field} />
                       </FormControl>
-                      <Button type="button" size="icon" variant="ghost" className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-accent" onClick={handleSuggestDate} disabled={isSuggesting}>
-                        {isSuggesting ? <Loader2 className="animate-spin" /> : <WandSparkles />}
-                      </Button>
                     </div>
                      <div className="flex flex-wrap gap-2 pt-2">
                       {[3, 5, 7, 10, 15, 20, 30, 90].map((days) => (
