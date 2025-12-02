@@ -26,7 +26,7 @@ function SettingsContent() {
           <CardHeader>
             <CardTitle>Theme</CardTitle>
             <CardDescription>
-              Choose how you want to experience VaultBox.
+              Choose how you want to experience SubRentX.
             </CardDescription>
           </CardHeader>
           <CardContent>

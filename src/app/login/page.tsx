@@ -25,7 +25,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { VaultboxLogo } from '@/components/icons/vaultbox-logo';
+import { SubrentxLogo } from '@/components/icons/vaultbox-logo';
 import { Loader2 } from 'lucide-react';
 import { GoogleIcon } from '@/components/icons/google-icon';
 import { useToast } from '@/hooks/use-toast';
@@ -79,9 +79,9 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
        <div className="absolute top-6 left-6 flex items-center gap-2">
         <Link href="/rental" className="flex items-center gap-2">
-          <VaultboxLogo className="h-8 w-8 text-primary" />
+          <SubrentxLogo className="h-8 w-8 text-primary" />
           <h1 className="font-headline text-2xl font-bold text-foreground">
-            VaultBox
+            SubRentX
           </h1>
         </Link>
       </div>

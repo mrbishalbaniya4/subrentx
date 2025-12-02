@@ -6,8 +6,8 @@ import { FirebaseClientProvider } from '@/firebase';
 import { SidebarProvider } from '@/components/ui/sidebar';
 
 export const metadata: Metadata = {
-  title: 'VaultBox',
-  description: 'Securely store and manage your sensitive items.',
+  title: 'SubRentX',
+  description: 'Securely store and manage your subscriptions and rentals.',
   manifest: '/manifest.json',
 };
 
@@ -25,6 +25,8 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <meta name="theme-color" content="#1a1a1a" />
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
