@@ -122,13 +122,21 @@ service cloud.firestore {
     // ----------------------------------------------------------------------
 
     /**
-     * @description Controls access to user profile documents.
-     * @path /users/{userId}
-     * @allow (get) An authenticated user can read their own profile, or an admin can read any profile.
+     * @description Controls access to the top-level 'users' collection.
+     * @path /users
      * @allow (list) The admin can list all users. Normal users cannot, to prevent user enumeration.
-     * @principle Restricts access to a user's own data tree, with an exception for admin read access.
      */
     match /users/{userId} {
+      /**
+       * @description Controls access to individual user profile documents.
+       * @path /users/{userId}
+       * @allow (get) An authenticated user can read their own profile, or an admin can read any profile.
+       * @allow (list) Only the admin can list all users to prevent user enumeration.
+       * @allow (create) A user can create their own profile.
+       * @allow (update) A user can update their own profile.
+       * @deny (delete) Users cannot delete their own profiles by default.
+       * @principle Restricts access to a user's own data tree, with an exception for admin read access.
+       */
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow create: if isOwner(userId) && hasValidUserId(userId);
