@@ -247,13 +247,15 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
   const itemType = item.parentId ? 'assigned' : 'master';
 
   const childrenQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    const masterId = item.id; // We only care about children for master products
+    if (!firestore || !user || !item.id) return null;
+    const masterId = itemType === 'master' ? item.id : item.parentId;
+    if (!masterId) return null;
+    
     return query(
       collection(firestore, `users/${user.uid}/items`),
       where('parentId', '==', masterId)
     );
-  }, [firestore, user, item.id]);
+  }, [firestore, user, item.id, item.parentId, itemType]);
 
   const { data: childItems } = useCollection<Item>(childrenQuery);
   
