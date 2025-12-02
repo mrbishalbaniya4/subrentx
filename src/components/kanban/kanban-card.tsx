@@ -246,36 +246,20 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
   const itemType = item.parentId ? 'assigned' : 'master';
 
   const childrenQuery = useMemoFirebase(() => {
-      if (!firestore || !user || itemType !== 'master') return null;
-      return query(
-        collection(firestore, `users/${user.uid}/items`),
-        where('parentId', '==', item.id)
-      );
-  }, [firestore, user, item.id, itemType]);
+    if (!firestore || !user) return null;
+    const masterId = item.parentId || item.id;
+    return query(
+      collection(firestore, `users/${user.uid}/items`),
+      where('parentId', '==', masterId)
+    );
+  }, [firestore, user, item.id, item.parentId]);
 
   const { data: childItems } = useCollection<Item>(childrenQuery);
+  
+  // For a master product, count its direct children.
+  // For an assigned item, we also want the count of its siblings (all children of its parent).
   const assignmentCount = childItems?.length || 0;
 
-  const profitLoss = useMemo(() => {
-      if (itemType !== 'assigned' || typeof item.masterPrice !== 'number' || typeof item.purchasePrice !== 'number') {
-        return { text: 'N/A', className: '', Icon: Minus };
-      }
-      const profit = item.purchasePrice - item.masterPrice;
-      const isProfit = profit > 0;
-      const isLoss = profit < 0;
-
-      let className = 'text-gray-500 dark:text-gray-400';
-      let Icon = Minus;
-
-      if (isProfit) {
-        className = 'text-green-600 dark:text-green-500';
-        Icon = TrendingUp;
-      } else if (isLoss) {
-        className = 'text-red-600 dark:text-red-500';
-        Icon = TrendingDown;
-      }
-      return { text: `$${profit.toFixed(2)}`, className, Icon };
-  }, [item.masterPrice, item.purchasePrice, itemType]);
 
   const masterExpirationInfo = () => {
     if (itemType !== 'assigned' || !item.masterEndDate) return null;
@@ -469,20 +453,10 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                     <CardTitle className="text-lg font-headline">Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col justify-center items-center p-4 text-center">
-                    {itemType === 'master' ? (
-                        <div className="space-y-2">
-                            <p className="text-sm text-muted-foreground">Total Assignments</p>
-                            <p className="text-4xl font-bold">{assignmentCount}</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-2">
-                            <p className="text-sm text-muted-foreground">Profit / Loss</p>
-                            <div className={cn("flex items-center gap-2 text-4xl font-bold", profitLoss.className)}>
-                                <profitLoss.Icon className="h-8 w-8" />
-                                <span>{profitLoss.text}</span>
-                            </div>
-                        </div>
-                    )}
+                    <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Total Assignments</p>
+                        <p className="text-4xl font-bold">{assignmentCount}</p>
+                    </div>
                 </CardContent>
                 <CardFooter className="p-2 pt-0">
                     <Button variant="ghost" size="sm" className="w-full" onClick={() => setIsFlipped(false)}>
