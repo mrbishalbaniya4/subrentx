@@ -93,7 +93,7 @@ export function AppLayout({
           viewMode,
         })}
       </div>
-      {isMobile && <MobileBottomNav itemType={itemType} />}
+      {isMobile && <MobileBottomNav itemType={itemType} hideControls={hideControls} />}
     </div>
   );
 }
@@ -176,7 +176,7 @@ function AppSidebar() {
 }
 
 
-function MobileBottomNav({ itemType }: { itemType: 'master' | 'assigned' | 'summary' }) {
+function MobileBottomNav({ itemType, hideControls }: { itemType: 'master' | 'assigned' | 'summary'; hideControls?: boolean; }) {
   const pathname = usePathname();
 
   const navItems = [
@@ -206,7 +206,7 @@ function MobileBottomNav({ itemType }: { itemType: 'master' | 'assigned' | 'summ
         ))}
 
         <div className="relative flex justify-center">
-            {itemType !== 'summary' && (
+            {!hideControls && itemType !== 'summary' && (
               <div className="absolute -top-8">
                 <AddItemButton itemType={itemType} />
               </div>
