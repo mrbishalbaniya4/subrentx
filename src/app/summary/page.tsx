@@ -11,6 +11,7 @@ import type { Item } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { SummaryCharts } from '@/components/summary/summary-charts';
 import { format, formatDistanceToNow } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 function UnassignedItemsList({ items }: { items: Item[] }) {
   if (items.length === 0) {
@@ -91,7 +92,11 @@ function SummaryContent({ items }: { items: Item[] }) {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Rs {totalProfit.toFixed(2)}</div>
+            <div className={cn(
+                "text-2xl font-bold",
+                totalProfit > 0 && "text-green-600",
+                totalProfit < 0 && "text-red-600"
+            )}>Rs {totalProfit.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
               Calculated from all rentals vs all costs
             </p>
