@@ -62,7 +62,7 @@ async function logActivity(
 export async function createItem(
   firestore: Firestore,
   userId: string,
-  itemData: ItemFormData,
+  itemData: Partial<Item>,
   availableMasterProducts: Item[]
 ): Promise<string> {
     const itemsCollection = collection(firestore, `users/${userId}/items`);
@@ -87,7 +87,7 @@ export async function createItem(
 
     try {
         const newItemRef = await addDoc(itemsCollection, dataToSave);
-        await logActivity(firestore, userId, newItemRef.id, itemData.name, 'created', 'Item created');
+        await logActivity(firestore, userId, newItemRef.id, itemData.name!, 'created', 'Item created');
         return newItemRef.id;
     } catch (error) {
         console.error('Error creating item:', error);
@@ -119,12 +119,9 @@ export async function editItem(
     }
     const originalData = docSnap.data() as Item;
 
-    const dataToSave = {
-      ...originalData,
+    const dataToSave: Partial<Item> & {updatedAt: FieldValue} = {
       ...dataToUpdate,
       updatedAt: serverTimestamp(),
-      createdAt: originalData.createdAt,
-      userId: originalData.userId,
     };
     
     const isMasterProduct = !originalData.parentId;
@@ -144,10 +141,12 @@ export async function editItem(
         
         childrenSnapshot.forEach(childDoc => {
             const childRef = doc(firestore, `users/${userId}/items`, childDoc.id);
-            batch.update(childRef, { 
+            const childUpdate: Partial<Item> = { 
                 password: dataToUpdate.password,
+                lastPasswordChange: dataToUpdate.lastPasswordChange,
                 updatedAt: serverTimestamp() 
-            });
+            }
+            batch.update(childRef, childUpdate);
         });
 
         // 3. Commit the batch
@@ -176,7 +175,7 @@ export async function editItem(
         firestore,
         userId,
         itemId,
-        dataToSave.name || 'Item',
+        dataToUpdate.name || originalData.name,
         activityAction,
         activityDetails
     );

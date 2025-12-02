@@ -25,6 +25,7 @@ export interface Item {
   contactValue?: string;
   purchasePrice?: number;
   masterPrice?: number;
+  lastPasswordChange?: string;
   archivedAt?: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;

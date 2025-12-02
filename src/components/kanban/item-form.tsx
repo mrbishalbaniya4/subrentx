@@ -86,7 +86,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [lastGenerated, setLastGenerated] = useState<Date | null>(null);
+  const [passwordChanged, setPasswordChanged] = useState(false);
   const { user } = useUser();
   const firestore = useFirestore();
 
@@ -173,7 +173,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
   const isMasterProductSelection = !parentId || parentId === 'none';
   const finalIsMasterProduct = (isMasterProductForm) || (isCreatingAssignment && isMasterProductSelection);
   
-  const datesAreDisabled = !!(item && item.parentId);
+  const datesAreDisabled = !!(item?.parentId && item?.endDate && item?.startDate);
 
 
   const onSubmit = (values: ItemFormValues) => {
@@ -188,17 +188,22 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
 
     startTransition(async () => {
       try {
-        const itemData = {
+        const itemData: Partial<Item> = {
             ...values,
             parentId: values.parentId === 'none' ? null : values.parentId,
             startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
             endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
         };
+
+        if (passwordChanged) {
+            itemData.lastPasswordChange = new Date().toISOString();
+        }
+
         if (item) {
           await editItem(firestore, user.uid, { ...item, ...itemData });
           toast({ title: 'Success', description: 'Item updated successfully.' });
         } else {
-          await createItem(firestore, user.uid, itemData, availableMasterProducts);
+          await createItem(firestore, user.uid, itemData as Item, availableMasterProducts);
           toast({ title: 'Success', description: 'Item added successfully.' });
         }
         setDialogOpen(false);
@@ -250,7 +255,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
       const result = await generatePasswordAction();
       if (result.password) {
         form.setValue('password', result.password, { shouldValidate: true });
-        setLastGenerated(new Date());
+        setPasswordChanged(true);
         toast({
           title: 'Password Generated',
           description: 'A new strong password has been set.',
@@ -414,7 +419,15 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                     <FormLabel>Password</FormLabel>
                     <div className="relative">
                         <FormControl>
-                          <Input type={isPasswordVisible ? 'text' : 'password'} placeholder="••••••••" {...field} />
+                          <Input 
+                            type={isPasswordVisible ? 'text' : 'password'} 
+                            placeholder="••••••••" 
+                            {...field}
+                            onChange={(e) => {
+                                field.onChange(e);
+                                setPasswordChanged(true);
+                            }}
+                          />
                         </FormControl>
                         <div className="absolute right-1 top-1/2 flex -translate-y-1/2">
                             <Button
@@ -445,9 +458,9 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                         <p className="text-xs font-medium text-muted-foreground">
                             {strengthLabels[passwordStrength]}
                         </p>
-                        {lastGenerated && (
+                        {item?.lastPasswordChange && (
                             <p className="text-xs text-muted-foreground">
-                                Last generated: {format(lastGenerated, 'PPp')}
+                                Last changed: {format(new Date(item.lastPasswordChange), 'PPp')}
                             </p>
                         )}
                     </div>
