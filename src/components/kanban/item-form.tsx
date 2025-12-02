@@ -141,6 +141,11 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
   });
   
   const parentId = form.watch('parentId');
+  const selectedMaster = useMemo(() => {
+      if (!parentId || !allItems) return null;
+      return allItems.find(p => p.id === parentId);
+  }, [parentId, allItems]);
+
 
   // Effect to auto-fill form when a master product is selected for a new assignment
   useEffect(() => {
@@ -279,6 +284,14 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
       shouldValidate: true,
     });
   };
+
+  const masterDuration = useMemo(() => {
+    if (!selectedMaster || !selectedMaster.startDate || !selectedMaster.endDate) return null;
+    const start = new Date(selectedMaster.startDate);
+    const end = new Date(selectedMaster.endDate);
+    if (!isValid(start) || !isValid(end)) return null;
+    return differenceInDays(end, start);
+  }, [selectedMaster]);
 
   return (
     <Form {...form}>
@@ -508,6 +521,11 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
                     <FormControl>
                       <Input type="datetime-local" {...field} />
                     </FormControl>
+                    {masterDuration !== null && (
+                      <FormDescription>
+                        Master product is valid for {masterDuration} days.
+                      </FormDescription>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
