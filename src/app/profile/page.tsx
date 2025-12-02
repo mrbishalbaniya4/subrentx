@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { ProfileForm } from '@/components/profile/profile-form';
 import { ChangePasswordForm } from '@/components/profile/change-password-form';
 import { Separator } from '@/components/ui/separator';
+import { AdminUserList } from '@/components/profile/admin-user-list';
 
 // Wrapper component to catch and ignore props from AppLayout
 const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
@@ -40,6 +41,8 @@ export default function ProfilePage() {
   const canChangePassword = user?.providerData.some(
     (provider) => provider.providerId === 'password'
   );
+  
+  const isAdmin = user?.email === 'mrbishalbaniya4@gmail.com';
 
 
   if (isUserLoading || !user || isProfileLoading) {
@@ -70,6 +73,12 @@ export default function ProfilePage() {
               <>
                 <Separator />
                 <ChangePasswordForm />
+              </>
+            )}
+             {isAdmin && (
+              <>
+                <Separator />
+                <AdminUserList />
               </>
             )}
           </div>

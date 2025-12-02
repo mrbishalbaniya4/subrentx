@@ -13,8 +13,9 @@
  * Key Security Decisions:
  * - Admin Role: An admin user ('mrbishalbaniya4@gmail.com') is granted read access
  *   across all user data. This is for administrative oversight.
- * - User Enumeration Disabled: Listing the top-level '/users' collection is disallowed
- *   to prevent malicious actors from scraping a list of all application users.
+ * - User Enumeration Disabled for non-admins: Listing the top-level '/users' collection is disallowed
+ *   for regular users to prevent malicious actors from scraping a list of all application users.
+ *   The admin is granted list access.
  * - Path-Based Security: Rules primarily rely on the document path to determine ownership
  *   (e.g., checking if the {userId} in the path matches the authenticated user's ID).
  *   This is highly performant and secure.
@@ -124,12 +125,12 @@ service cloud.firestore {
      * @description Controls access to user profile documents.
      * @path /users/{userId}
      * @allow (get) An authenticated user can read their own profile, or an admin can read any profile.
-     * @deny (list) Disallows listing all users to prevent user enumeration.
+     * @allow (list) The admin can list all users. Normal users cannot, to prevent user enumeration.
      * @principle Restricts access to a user's own data tree, with an exception for admin read access.
      */
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
-      allow list: if false; // Disallow listing all users for security
+      allow list: if isAdmin();
       allow create: if isOwner(userId) && hasValidUserId(userId);
       allow update: if isExistingOwner(userId) && isUserIdImmutable();
       allow delete: if false; // Prevent users from deleting their own accounts by default
