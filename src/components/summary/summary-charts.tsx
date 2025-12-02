@@ -23,20 +23,32 @@ export function SummaryCharts({ items }: SummaryChartsProps) {
   const monthlyProfitData = React.useMemo(() => {
     const profitByMonth: { [key: string]: number } = {};
 
+     // Subtract costs of all master products
     items.forEach(item => {
-      if (item.parentId && (item.status === 'Expired' || item.status === 'Archived') && item.updatedAt) {
-        const month = format(item.updatedAt.toDate(), 'yyyy-MM');
-        const salePrice = item.purchasePrice || 0;
-        const cost = item.masterPrice || 0;
-        const profit = salePrice - cost;
-
+      if (!item.parentId && item.createdAt) {
+        const month = format(item.createdAt.toDate(), 'yyyy-MM');
+        const cost = item.purchasePrice || 0;
         if (profitByMonth[month]) {
-          profitByMonth[month] += profit;
+          profitByMonth[month] -= cost;
         } else {
-          profitByMonth[month] = profit;
+          profitByMonth[month] = -cost;
         }
       }
     });
+
+    // Add revenue from all assigned items
+    items.forEach(item => {
+      if (item.parentId && item.createdAt) {
+        const month = format(item.createdAt.toDate(), 'yyyy-MM');
+        const revenue = item.purchasePrice || 0;
+        if (profitByMonth[month]) {
+          profitByMonth[month] += revenue;
+        } else {
+          profitByMonth[month] = revenue;
+        }
+      }
+    });
+
 
     return Object.entries(profitByMonth)
       .map(([month, profit]) => ({

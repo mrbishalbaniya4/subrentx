@@ -13,9 +13,12 @@ import { SummaryCharts } from '@/components/summary/summary-charts';
 
 function SummaryContent({ items }: { items: Item[] }) {
   const { totalProfit, totalMasters, activeRentals, unassignedMasters } = useMemo(() => {
-    let totalProfit = 0;
     const masterProducts = items.filter(item => !item.parentId);
     const assignedItems = items.filter(item => !!item.parentId);
+
+    const totalCost = masterProducts.reduce((acc, item) => acc + (item.purchasePrice || 0), 0);
+    const totalRevenue = assignedItems.reduce((acc, item) => acc + (item.purchasePrice || 0), 0);
+    const totalProfit = totalRevenue - totalCost;
     
     const totalMasters = masterProducts.length;
     
@@ -24,14 +27,6 @@ function SummaryContent({ items }: { items: Item[] }) {
     
     const activelyAssignedMasterIds = new Set(activeAssignedItems.map(item => item.parentId));
     const unassignedMasters = masterProducts.filter(p => !activelyAssignedMasterIds.has(p.id)).length;
-
-    items.forEach(item => {
-      if (item.parentId && (item.status === 'Expired' || item.status === 'Archived')) {
-        const salePrice = item.purchasePrice || 0;
-        const cost = item.masterPrice || 0;
-        totalProfit += salePrice - cost;
-      }
-    });
 
     return { totalProfit, totalMasters, activeRentals, unassignedMasters };
   }, [items]);
@@ -47,7 +42,7 @@ function SummaryContent({ items }: { items: Item[] }) {
           <CardContent>
             <div className="text-2xl font-bold">Rs {totalProfit.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              Calculated from all completed rentals
+              Calculated from all rentals vs all costs
             </p>
           </CardContent>
         </Card>
