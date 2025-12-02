@@ -5,15 +5,17 @@ import React, { useEffect, useMemo } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { Loader2, Package, HandCoins, TrendingUp, PackageMinus, CalendarClock, List } from 'lucide-react';
+import { Loader2, Package, HandCoins, TrendingUp, PackageMinus, CalendarClock, List, TrendingDown, Minus } from 'lucide-react';
 import { AppLayout } from '@/components/app-layout';
 import type { Item } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { SummaryCharts } from '@/components/summary/summary-charts';
 import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
-function UnassignedItemsList({ items }: { items: Item[] }) {
+
+function UnassignedItemsList({ items, allItems }: { items: Item[]; allItems: Item[] }) {
   if (items.length === 0) {
     return null;
   }
@@ -30,26 +32,58 @@ function UnassignedItemsList({ items }: { items: Item[] }) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-6">
           {items.map(item => {
-            const distanceText = item.endDate 
+            const cost = item.purchasePrice || 0;
+            const children = allItems.filter(child => child.parentId === item.id);
+            const revenue = children.reduce((acc, child) => acc + (child.purchasePrice || 0), 0);
+            const profit = revenue - cost;
+            const recoveryPercentage = cost > 0 ? (revenue / cost) * 100 : 100;
+            
+            const isProfit = profit > 0;
+            const isLoss = profit < 0;
+
+            let profitClassName = 'text-muted-foreground';
+            let ProfitIcon = Minus;
+            if (isProfit) {
+                profitClassName = 'text-green-600 dark:text-green-500';
+                ProfitIcon = TrendingUp;
+            } else if (isLoss) {
+                profitClassName = 'text-red-600 dark:text-red-500';
+                ProfitIcon = TrendingDown;
+            }
+
+            const distanceText = item.endDate
               ? formatDistanceToNow(new Date(item.endDate), { addSuffix: true })
               : 'N/A';
-            const fullDate = item.endDate 
+            const fullDate = item.endDate
               ? format(new Date(item.endDate), 'PPp')
               : '';
 
             return (
-              <div key={item.id} className="flex items-center justify-between rounded-md border p-4">
-                <div>
-                  <p className="font-semibold">{item.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Cost: Rs {item.purchasePrice?.toFixed(2) ?? '0.00'}
-                  </p>
+              <div key={item.id} className="flex flex-col gap-3 rounded-md border p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-semibold">{item.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Cost: Rs {cost.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground" title={fullDate}>
+                    <CalendarClock className="h-4 w-4" />
+                    <span>Expires {distanceText}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground" title={fullDate}>
-                  <CalendarClock className="h-4 w-4" />
-                  <span>Expires {distanceText}</span>
+
+                <div className="space-y-2">
+                    <Progress value={recoveryPercentage} />
+                    <div className="flex justify-between text-xs">
+                        <span className={cn("font-medium flex items-center gap-1", profitClassName)}>
+                            <ProfitIcon className="h-4 w-4" />
+                            Profit/Loss: Rs {profit.toFixed(2)}
+                        </span>
+                        <span className="text-muted-foreground">{Math.min(100, recoveryPercentage).toFixed(0)}% Cost Recovered</span>
+                    </div>
                 </div>
               </div>
             );
@@ -135,7 +169,7 @@ function SummaryContent({ items }: { items: Item[] }) {
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SummaryCharts items={items} />
-        <UnassignedItemsList items={unassignedMasterItems} />
+        <UnassignedItemsList items={unassignedMasterItems} allItems={items} />
       </div>
     </main>
   );
