@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -76,7 +77,7 @@ export async function createItem(
         }
     }
     
-    const dataToSave = {
+    const dataToSave: any = {
       ...itemData,
       userId: userId,
       status: 'Active' as const,
@@ -84,6 +85,11 @@ export async function createItem(
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
+
+    if (itemData.password) {
+        dataToSave.lastPasswordChange = new Date().toISOString();
+    }
+
 
     try {
         const newItemRef = await addDoc(itemsCollection, dataToSave);
@@ -126,6 +132,10 @@ export async function editItem(
     
     const isMasterProduct = !originalData.parentId;
     const passwordChanged = 'password' in dataToUpdate && dataToUpdate.password !== originalData.password;
+    
+    if (passwordChanged) {
+        dataToSave.lastPasswordChange = new Date().toISOString();
+    }
 
     // If it's a master product and the password changed, update all children
     if (isMasterProduct && passwordChanged) {
@@ -141,9 +151,9 @@ export async function editItem(
         
         childrenSnapshot.forEach(childDoc => {
             const childRef = doc(firestore, `users/${userId}/items`, childDoc.id);
-            const childUpdate: Partial<Item> = { 
+            const childUpdate: Partial<Item> & {updatedAt: FieldValue, lastPasswordChange?: string} = { 
                 password: dataToUpdate.password,
-                lastPasswordChange: dataToUpdate.lastPasswordChange,
+                lastPasswordChange: dataToSave.lastPasswordChange,
                 updatedAt: serverTimestamp() 
             }
             batch.update(childRef, childUpdate);
@@ -365,3 +375,5 @@ export async function deleteItem(firestore: Firestore, userId: string, itemId: s
         throw error;
     }
 }
+
+    

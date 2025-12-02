@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -101,7 +102,7 @@
         "category": {
           "type": "string",
           "description": "Category of the item.",
-          "enum": ["Work", "Personal", "Finance", "Shopping", "Social", "Travel", "Other"]
+          "enum": ["Apeuni", "Netflix", "Amazon", "Spotify", "Hulu", "Other"]
         },
         "contactName": {
             "type": "string",
@@ -118,6 +119,11 @@
         "masterPrice": {
           "type": "number",
           "description": "For an assigned item, this stores the original cost from its master product to calculate profit/loss."
+        },
+        "lastPasswordChange": {
+          "type": "string",
+          "description": "Timestamp indicating when the password was last changed.",
+          "format": "date-time"
         },
         "archivedAt": {
           "type": "string",
@@ -252,3 +258,5 @@
     "reasoning": "The Firestore structure is designed to ensure secure and scalable data storage for VaultBox, focusing on authorization independence, clarity, and adherence to best practices.  It leverages path-based ownership and explicit data denormalization to avoid complex security rules that rely on `get()` calls.  \n\nThe structure uses the following patterns:\n\n*   **/users/{userId}**:  This collection stores user profiles. Access is restricted to the authenticated user (path-based ownership).\n*   **/users/{userId}/items/{itemId}**: Stores items owned by a specific user. Path-based ownership ensures only the user can access their items.\n*   **/users/{userId}/activity-logs/{logId}**: Stores activity logs for a specific user. Path-based ownership ensures only the user can access their own activity history.\n\n**Authorization Independence:** The primary method to achieve Authorization Independence is through path-based ownership. Since each `Item` is stored within the `/users/{userId}/items/{itemId}` path, security rules can directly verify that `request.auth.uid == userId` without needing to `get()` any data from parent documents. This simplifies rules and enables atomic operations.\n\n**QAPs (Rules are not Filters):** The structure supports secure `list` operations because of path-based ownership. When listing items under `/users/{userId}/items`, rules can efficiently verify the user's ID against the `userId` path parameter, ensuring that only the user's own items are returned. This avoids needing to filter based on document data, which is an anti-pattern in Firestore security rules."
   }
 }
+
+    
