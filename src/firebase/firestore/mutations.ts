@@ -112,39 +112,61 @@ export async function editItem(
   const { id: itemId, ...dataToUpdate } = itemData;
   const itemRef = doc(firestore, `users/${userId}/items/${itemId}`);
 
-  // Fetch the original document to preserve immutable fields
   try {
     const docSnap = await getDoc(itemRef);
     if (!docSnap.exists()) {
       throw new Error('Item not found');
     }
-    const originalData = docSnap.data();
+    const originalData = docSnap.data() as Item;
 
     const dataToSave = {
-      ...originalData, // Start with existing data
-      ...dataToUpdate, // Overwrite with new data
+      ...originalData,
+      ...dataToUpdate,
       updatedAt: serverTimestamp(),
-      // Ensure immutable fields are from the original data
       createdAt: originalData.createdAt,
       userId: originalData.userId,
     };
     
-    // Prepare a version for the error emitter that shows serverTimestamp
-    const dataToSaveForError = {
-        ...dataToUpdate,
-        updatedAt: serverTimestamp(),
-    };
+    const isMasterProduct = !originalData.parentId;
+    const passwordChanged = 'password' in dataToUpdate && dataToUpdate.password !== originalData.password;
 
+    // If it's a master product and the password changed, update all children
+    if (isMasterProduct && passwordChanged) {
+        const batch = writeBatch(firestore);
+        
+        // 1. Update the master product
+        batch.update(itemRef, dataToSave);
 
-    await updateDoc(itemRef, dataToSave);
+        // 2. Find and update all children
+        const itemsCollection = collection(firestore, `users/${userId}/items`);
+        const childrenQuery = query(itemsCollection, where('parentId', '==', itemId));
+        const childrenSnapshot = await getDocs(childrenQuery);
+        
+        childrenSnapshot.forEach(childDoc => {
+            const childRef = doc(firestore, `users/${userId}/items`, childDoc.id);
+            batch.update(childRef, { 
+                password: dataToUpdate.password,
+                updatedAt: serverTimestamp() 
+            });
+        });
 
-    // Log activity based on what was changed
+        // 3. Commit the batch
+        await batch.commit();
+
+    } else {
+        // Standard update for a single item (or master product without password change)
+        await updateDoc(itemRef, dataToSave);
+    }
+
+    // Log activity
     let activityAction = 'updated';
     let activityDetails = 'Item details updated';
-
-    if ('password' in dataToUpdate && dataToUpdate.password !== originalData.password) {
-      activityAction = 'password_changed';
-      activityDetails = 'Password was changed';
+    if (passwordChanged) {
+        activityAction = 'password_changed';
+        activityDetails = 'Password was changed';
+        if (isMasterProduct) {
+            activityDetails += ' and propagated to assigned items.';
+        }
     } else if ('status' in dataToUpdate && dataToUpdate.status !== originalData.status) {
         activityAction = 'updated';
         activityDetails = `Status changed to ${dataToUpdate.status}`;
