@@ -1,0 +1,60 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { AppLayout } from '@/components/app-layout';
+import { Loader2 } from 'lucide-react';
+import { ProfileForm } from '@/components/profile/profile-form';
+
+export default function ProfilePage() {
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [isUserLoading, user, router]);
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+
+  const {
+    data: userProfile,
+    isLoading: isProfileLoading,
+    error,
+  } = useDoc(userProfileRef);
+
+  if (isUserLoading || !user || isProfileLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-destructive">
+          Error loading profile: {error.message}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <AppLayout pageTitle="Profile" itemType="summary" hideControls>
+      <main className="flex-1 overflow-auto p-4 md:p-6">
+        <div className="mx-auto max-w-2xl">
+          <ProfileForm userProfile={userProfile} />
+        </div>
+      </main>
+    </AppLayout>
+  );
+}

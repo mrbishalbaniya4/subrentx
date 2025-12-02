@@ -16,6 +16,7 @@ import {
   query,
   where,
   getDocs,
+  setDoc,
 } from 'firebase/firestore';
 import type { Item, Status } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -86,6 +87,10 @@ export async function createItem(
       updatedAt: serverTimestamp(),
     };
 
+    if (!dataToSave.startDate) delete dataToSave.startDate;
+    if (!dataToSave.endDate) delete dataToSave.endDate;
+
+
     if (itemData.password) {
         dataToSave.lastPasswordChange = new Date().toISOString();
     }
@@ -129,6 +134,10 @@ export async function editItem(
       ...dataToUpdate,
       updatedAt: serverTimestamp(),
     };
+
+    if (!dataToSave.startDate) delete dataToSave.startDate;
+    if (!dataToSave.endDate) delete dataToSave.endDate;
+
     
     const isMasterProduct = !originalData.parentId;
     const passwordChanged = 'password' in dataToUpdate && dataToUpdate.password !== originalData.password;
@@ -374,6 +383,35 @@ export async function deleteItem(firestore: Firestore, userId: string, itemId: s
         );
         throw error;
     }
+}
+
+export async function saveUserProfile(
+  firestore: Firestore,
+  userId: string,
+  profileData: { firstName: string; lastName: string }
+): Promise<void> {
+  const userRef = doc(firestore, 'users', userId);
+
+  const dataToSave = {
+    ...profileData,
+    updatedAt: serverTimestamp(),
+  };
+
+  try {
+    // Using setDoc with merge: true is like an "upsert"
+    await setDoc(userRef, dataToSave, { merge: true });
+  } catch (error) {
+    console.error('Error saving user profile:', error);
+    errorEmitter.emit(
+      'permission-error',
+      new FirestorePermissionError({
+        path: userRef.path,
+        operation: 'update',
+        requestResourceData: dataToSave,
+      })
+    );
+    throw error;
+  }
 }
 
     
