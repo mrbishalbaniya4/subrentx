@@ -1,0 +1,133 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model with an
+ * approval system, with an exception for a designated admin user. All data is
+ * sandboxed to the authenticated user, meaning a user can only ever access their
+ * own information and the items they create, BUT ONLY if their account status is 'active'.
+ * The admin user ('mrbishalbaniya4@gmail.com') has read and write access to all data
+ * for administrative purposes, including changing a user's status.
+ *
+ * Data Structure: The data is organized hierarchically. A top-level 'users' collection
+ * holds user profile documents which contain a 'status' field ('pending', 'active', 'suspended').
+ * All other data ('items', 'activity-logs') is in subcollections under the user's document.
+ *
+ * Key Security Decisions:
+ * - Admin Role: An admin user ('mrbishalbaniya4@gmail.com') is granted read/write access
+ *   across all user data, primarily to manage user statuses.
+ * - User Approval System:
+ *   - New users are created with a 'status' of 'pending'.
+ *   - Users with 'pending' or 'suspended' status can only read their own user document. They cannot
+ *     read or write any subcollection data (items, logs, etc.).
+ *   - Only the admin can change a user's status.
+ *   - Normal operations are only permitted for users with an 'active' status.
+ * - User Enumeration Disabled for non-admins: Regular users cannot list the '/users' collection.
+ * - Path-Based Security: Rules primarily rely on the document path to determine ownership.
+ *
+ * Denormalization for Authorization: The rules use `get()` to check the user's status from their
+ * profile document (`/users/{userId}`) before allowing access to subcollections. This is a
+ * necessary `get()` call to enforce the approval system. For example, to secure an item at
+ * `/users/{userId}/items/{itemId}`, the rule checks both `request.auth.uid == userId` and
+ * that `get(/databases/$(database)/documents/users/$(userId)).data.status == 'active'`.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------------------------------------------------------
+    // Helper Functions
+    // ----------------------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'mrbishalbaniya4@gmail.com';
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isOwnerAndActive(userId) {
+        let userProfile = get(/databases/$(database)/documents/users/$(userId));
+        return isOwner(userId) && userProfile.data.status == 'active';
+    }
+    
+    function isCreatingOwnPendingUser(userId) {
+        return isOwner(userId) &&
+               request.resource.data.id == userId &&
+               request.resource.data.status == 'pending';
+    }
+
+    function isUpdatingOwnProfile(userId) {
+        let isStatusUnchanged = request.resource.data.status == resource.data.status;
+        let isIdUnchanged = request.resource.data.id == resource.data.id;
+        return isOwner(userId) && isStatusUnchanged && isIdUnchanged;
+    }
+
+    function isAdminUpdatingProfile(userId) {
+        // Admin can update any profile, including changing the status, but not the ID.
+        return isAdmin() && request.resource.data.id == resource.data.id;
+    }
+    
+    function hasValidItemData(userId) {
+      return request.resource.data.userId == userId;
+    }
+    
+    function isItemUserIdImmutable() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    function isItemCreationTimestampImmutable() {
+      return request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function hasValidLogData(userId) {
+      return request.resource.data.userId == userId;
+    }
+
+    // ----------------------------------------------------------------------
+    // Collection Rules
+    // ----------------------------------------------------------------------
+
+    match /users/{userId} {
+      /**
+       * @description Controls access to individual user profile documents.
+       * @allow (get) Any signed-in user can read their own profile. Admin can read any profile.
+       * @allow (list) Only the admin can list users.
+       * @allow (create) A user can create their own profile with 'pending' status. Admin can also create a user.
+       * @allow (update) A user can update their own profile (but not status). Admin can update anything.
+       */
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isCreatingOwnPendingUser(userId) || isAdmin();
+      allow update: if isUpdatingOwnProfile(userId) || isAdminUpdatingProfile(userId);
+      allow delete: if false;
+
+      /**
+       * @description Controls access to a user's private vault items.
+       * @allow (read, write) Only the owner of an 'active' account can access their items. Admin can read anyone's.
+       */
+      match /items/{itemId} {
+        allow get: if isOwnerAndActive(userId) || isAdmin();
+        allow list: if isOwnerAndActive(userId) || isAdmin();
+        allow create: if isOwnerAndActive(userId) && hasValidItemData(userId);
+        allow update: if isOwnerAndActive(userId) && isItemUserIdImmutable() && isItemCreationTimestampImmutable();
+        allow delete: if isOwnerAndActive(userId);
+      }
+
+      /**
+       * @description Controls access to a user's activity log.
+       * @allow (read, list) Only the owner of an 'active' account can access their logs. Admin can read anyone's.
+       * @allow (create) Logs can only be created for an 'active' user.
+       */
+      match /activity-logs/{logId} {
+        allow get: if isOwnerAndActive(userId) || isAdmin();
+        allow list: if isOwnerAndActive(userId) || isAdmin();
+        allow create: if isOwnerAndActive(userId) && hasValidLogData(userId);
+        allow update: if false;
+        allow delete: if false;
+      }
+    }
+  }
+}

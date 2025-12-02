@@ -82,11 +82,16 @@ function UserActions({ user }: { user: UserProfile }) {
   return (
     <div className="flex gap-2">
       {user.status === 'pending' && (
-        <Button size="sm" onClick={() => handleUpdateStatus('active')} disabled={isPending} className="bg-green-600 hover:bg-green-700">
-          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve'}
-        </Button>
+        <>
+          <Button size="sm" onClick={() => handleUpdateStatus('active')} disabled={isPending} className="bg-green-600 hover:bg-green-700">
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve'}
+          </Button>
+           <Button size="sm" variant="destructive" onClick={() => handleUpdateStatus('suspended')} disabled={isPending}>
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reject'}
+          </Button>
+        </>
       )}
-      {user.status === 'active' && (
+      {user.status === 'active' && user.email !== 'mrbishalbaniya4@gmail.com' && (
         <Button size="sm" variant="destructive" onClick={() => handleUpdateStatus('suspended')} disabled={isPending}>
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Suspend'}
         </Button>
@@ -141,6 +146,7 @@ export function AdminUserList() {
               <TableHead>User</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Signed Up</TableHead>
+              <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -167,6 +173,11 @@ export function AdminUserList() {
                   {user.createdAt
                     ? formatDistanceToNow(user.createdAt.toDate(), { addSuffix: true })
                     : 'N/A'}
+                </TableCell>
+                <TableCell>
+                   <Badge variant={user.email === 'mrbishalbaniya4@gmail.com' ? 'default' : 'secondary'}>
+                        {user.email === 'mrbishalbaniya4@gmail.com' ? 'Admin' : 'User'}
+                    </Badge>
                 </TableCell>
                 <TableCell>
                     <Badge className={cn(statusColors[user.status])}>
