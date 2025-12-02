@@ -25,6 +25,7 @@ import {
   LayoutDashboard,
   Users,
   Plus,
+  AreaChart,
 } from 'lucide-react';
 import { Header } from '@/components/header';
 import { useUser } from '@/firebase';
@@ -48,7 +49,7 @@ export function AppLayout({
 }: {
   children: React.ReactNode;
   pageTitle: string;
-  itemType: 'master' | 'assigned';
+  itemType: 'master' | 'assigned' | 'summary';
   hideControls?: boolean;
 }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -128,6 +129,18 @@ function AppSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname === '/summary'}
+              tooltip="Summary"
+            >
+              <Link href="/summary">
+                <AreaChart />
+                <span>Summary</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
@@ -163,14 +176,14 @@ function AppSidebar() {
 }
 
 
-function MobileBottomNav({ itemType }: { itemType: 'master' | 'assigned' }) {
+function MobileBottomNav({ itemType }: { itemType: 'master' | 'assigned' | 'summary' }) {
   const pathname = usePathname();
 
   const navItems = [
     { href: '/rental', label: 'Rentals', icon: LayoutDashboard },
     { href: '/products', label: 'Products', icon: ShoppingBag },
+    { href: '/summary', label: 'Summary', icon: AreaChart },
     { href: '/activity-log', label: 'Activity', icon: History },
-    { href: '#', label: 'Settings', icon: Settings },
   ];
 
   return (
@@ -193,9 +206,11 @@ function MobileBottomNav({ itemType }: { itemType: 'master' | 'assigned' }) {
         ))}
 
         <div className="relative flex justify-center">
-            <div className="absolute -top-8">
-              <AddItemButton itemType={itemType} />
-            </div>
+            {itemType !== 'summary' && (
+              <div className="absolute -top-8">
+                <AddItemButton itemType={itemType} />
+              </div>
+            )}
         </div>
 
         {navItems.slice(2).map((item, index) => (

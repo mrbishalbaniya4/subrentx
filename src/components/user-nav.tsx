@@ -9,7 +9,8 @@ import {
   Moon,
   Sun,
   Monitor,
-  ShoppingBag
+  ShoppingBag,
+  AreaChart
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -104,6 +105,10 @@ export function UserNav() {
              <DropdownMenuItem onClick={() => router.push('/products')}>
               <ShoppingBag className="mr-2 h-4 w-4" />
               <span>Master Products</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/summary')}>
+                <AreaChart className="mr-2 h-4 w-4" />
+                <span>Summary</span>
             </DropdownMenuItem>
              <DropdownMenuItem onClick={() => router.push('/activity-log')}>
               <History className="mr-2 h-4 w-4" />

@@ -29,7 +29,7 @@ interface HeaderProps {
   viewMode: ViewMode;
   onViewModeChange: (viewMode: ViewMode) => void;
   isClient: boolean;
-  itemType: 'master' | 'assigned';
+  itemType: 'master' | 'assigned' | 'summary';
   hideControls?: boolean;
 }
 
@@ -144,7 +144,7 @@ export function Header({
         )}
 
         <div className="ml-auto flex items-center gap-2">
-          {user && !hideControls && <AddItemButton itemType={itemType} />}
+          {user && !hideControls && itemType !== 'summary' && <AddItemButton itemType={itemType} />}
           <UserNav />
         </div>
       </header>
