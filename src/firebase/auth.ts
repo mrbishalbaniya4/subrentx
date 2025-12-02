@@ -24,15 +24,22 @@ const createUserProfile = async (userCredential: UserCredential) => {
   const { user } = userCredential;
   const { firestore } = initializeFirebase();
   const userRef = doc(firestore, 'users', user.uid);
-  const userData = {
+  
+  const googleId = user.providerData.find(p => p.providerId === 'google.com')?.uid;
+
+  const userData: any = {
     id: user.uid,
     email: user.email,
     firstName: user.displayName?.split(' ')[0] || '',
     lastName: user.displayName?.split(' ')[1] || '',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-    googleId: user.providerData.find(p => p.providerId === 'google.com')?.uid,
   };
+
+  if (googleId) {
+    userData.googleId = googleId;
+  }
+
   await setDoc(userRef, userData, { merge: true });
 };
 
