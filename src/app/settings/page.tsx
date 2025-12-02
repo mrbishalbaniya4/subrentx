@@ -12,7 +12,7 @@ import {
 import { useTheme } from '@/components/theme-provider';
 import { Moon, Sun, Monitor } from 'lucide-react';
 import { useUser } from '@/firebase';
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
@@ -51,6 +51,10 @@ function SettingsContent() {
   );
 }
 
+// Wrapper component to catch and ignore props from AppLayout
+const ContentWrapper = ({ children }: { children: ReactNode }) => {
+  return <>{children}</>;
+};
 
 export default function SettingsPage() {
   const { user, isUserLoading } = useUser();
@@ -72,7 +76,9 @@ export default function SettingsPage() {
   
   return (
     <AppLayout pageTitle="Settings" itemType="summary" hideControls>
-      <SettingsContent />
+       <ContentWrapper>
+        <SettingsContent />
+      </ContentWrapper>
     </AppLayout>
   );
 }

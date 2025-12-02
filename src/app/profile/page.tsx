@@ -8,6 +8,11 @@ import { AppLayout } from '@/components/app-layout';
 import { Loader2 } from 'lucide-react';
 import { ProfileForm } from '@/components/profile/profile-form';
 
+// Wrapper component to catch and ignore props from AppLayout
+const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
+  return <>{children}</>;
+};
+
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -50,11 +55,13 @@ export default function ProfilePage() {
 
   return (
     <AppLayout pageTitle="Profile" itemType="summary" hideControls>
-      <main className="flex-1 overflow-auto p-4 md:p-6">
-        <div className="mx-auto max-w-2xl">
-          <ProfileForm userProfile={userProfile} />
-        </div>
-      </main>
+      <ContentWrapper>
+        <main className="flex-1 overflow-auto p-4 md:p-6">
+          <div className="mx-auto max-w-2xl">
+            <ProfileForm userProfile={userProfile} />
+          </div>
+        </main>
+      </ContentWrapper>
     </AppLayout>
   );
 }
