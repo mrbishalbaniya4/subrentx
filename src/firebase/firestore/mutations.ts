@@ -11,6 +11,10 @@ import {
   Timestamp,
   FieldValue,
   deleteDoc as fbDeleteDoc,
+  writeBatch,
+  query,
+  where,
+  getDocs,
 } from 'firebase/firestore';
 import type { Item, Status } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -308,7 +312,24 @@ export async function deleteItem(firestore: Firestore, userId: string, itemId: s
         }
         const item = docSnap.data() as Item;
 
+        // If it's a master product (no parentId), delete its children
+        if (!item.parentId) {
+            const itemsCollection = collection(firestore, `users/${userId}/items`);
+            const childrenQuery = query(itemsCollection, where('parentId', '==', itemId));
+            const childrenSnapshot = await getDocs(childrenQuery);
+            
+            if (!childrenSnapshot.empty) {
+                const batch = writeBatch(firestore);
+                childrenSnapshot.forEach(childDoc => {
+                    batch.delete(childDoc.ref);
+                });
+                await batch.commit();
+            }
+        }
+
+        // Delete the item itself
         await fbDeleteDoc(itemRef);
+
         await logActivity(firestore, userId, itemId, item.name, 'deleted', 'Item was permanently deleted');
 
     } catch (error) {
