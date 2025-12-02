@@ -1,7 +1,7 @@
 'use client';
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import {
   Card,
@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 
@@ -45,7 +45,9 @@ export function AdminUserList() {
 
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
+    // Removed orderBy('createdAt', 'desc') to avoid needing a composite index.
+    // The list will now appear in Firestore's default order.
+    return query(collection(firestore, 'users'));
   }, [firestore]);
 
   const { data: users, isLoading, error } = useCollection<UserProfile>(usersQuery);
