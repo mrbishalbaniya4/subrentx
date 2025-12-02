@@ -27,7 +27,7 @@ export default function ProductsPage() {
 
   return (
      <AppLayout pageTitle="Master Products" itemType="master">
-        <KanbanWrapper user={user} itemType="master" />
+        {(props) => <KanbanWrapper user={user} itemType="master" {...props} />}
     </AppLayout>
   );
 }

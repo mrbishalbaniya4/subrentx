@@ -17,11 +17,6 @@ function ActivityLogContent({ logs }: { logs: ActivityLog[] }) {
   );
 }
 
-// Wrapper component to catch and ignore props from AppLayout
-const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
-  return <>{children}</>;
-};
-
 export default function ActivityLogPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -53,9 +48,7 @@ export default function ActivityLogPage() {
 
   return (
     <AppLayout pageTitle="Activity Log" itemType="assigned" hideControls>
-      <ContentWrapper>
-        <ActivityLogContent logs={activityLogs || []} />
-      </ContentWrapper>
+      {() => <ActivityLogContent logs={activityLogs || []} />}
     </AppLayout>
   );
 }

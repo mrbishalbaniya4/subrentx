@@ -51,11 +51,6 @@ function SettingsContent() {
   );
 }
 
-// Wrapper component to catch and ignore props from AppLayout
-const ContentWrapper = ({ children }: { children: ReactNode }) => {
-  return <>{children}</>;
-};
-
 export default function SettingsPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
@@ -76,9 +71,7 @@ export default function SettingsPage() {
   
   return (
     <AppLayout pageTitle="Settings" itemType="summary" hideControls>
-       <ContentWrapper>
-        <SettingsContent />
-      </ContentWrapper>
+       {() => <SettingsContent />}
     </AppLayout>
   );
 }

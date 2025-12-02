@@ -175,11 +175,6 @@ function SummaryContent({ items }: { items: Item[] }) {
   );
 }
 
-// Wrapper component to catch and ignore props from AppLayout
-const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
-  return <>{children}</>;
-};
-
 export default function SummaryPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -208,9 +203,7 @@ export default function SummaryPage() {
 
   return (
     <AppLayout pageTitle="Summary" itemType="summary" hideControls>
-       <ContentWrapper>
-        <SummaryContent items={allItems || []} />
-      </ContentWrapper>
+       {() => <SummaryContent items={allItems || []} />}
     </AppLayout>
   );
 }

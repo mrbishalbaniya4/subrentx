@@ -39,7 +39,7 @@ export default function RentalPage() {
 
   return (
     <AppLayout pageTitle="Rentals" itemType="assigned">
-      <KanbanWrapper user={user} itemType="assigned" />
+      {(props) => <KanbanWrapper user={user} itemType="assigned" {...props} />}
     </AppLayout>
   );
 }

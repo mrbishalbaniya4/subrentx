@@ -47,7 +47,13 @@ export function AppLayout({
   itemType,
   hideControls = false,
 }: {
-  children: React.ReactNode;
+  children: (props: {
+    searchQuery: string;
+    filterCategory: FilterCategory;
+    filterUrgency: FilterUrgency;
+    sortBy: SortByType;
+    viewMode: ViewMode;
+  }) => React.ReactNode;
   pageTitle: string;
   itemType: 'master' | 'assigned' | 'summary';
   hideControls?: boolean;
@@ -85,13 +91,7 @@ export function AppLayout({
           itemType={itemType}
           hideControls={hideControls}
         />
-        {React.cloneElement(children as React.ReactElement, {
-          searchQuery,
-          filterCategory,
-          filterUrgency,
-          sortBy,
-          viewMode,
-        })}
+        {children({ searchQuery, filterCategory, filterUrgency, sortBy, viewMode })}
       </div>
       {isMobile && <MobileBottomNav itemType={itemType} hideControls={hideControls} />}
     </div>
