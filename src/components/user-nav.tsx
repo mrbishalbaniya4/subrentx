@@ -10,7 +10,7 @@ import {
   Sun,
   Monitor,
   ShoppingBag,
-  AreaChart
+  AreaChart,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -32,7 +32,6 @@ import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/theme-provider';
-import { ThemeToggle } from './theme-toggle';
 
 export function UserNav() {
   const { user, isUserLoading } = useUser();
@@ -75,7 +74,6 @@ export function UserNav() {
 
   return (
     <div className="flex items-center gap-2">
-      <ThemeToggle />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-9 w-9 rounded-full">
@@ -102,19 +100,42 @@ export function UserNav() {
               <UserIcon className="mr-2 h-4 w-4" />
               <span>Profile</span>
             </DropdownMenuItem>
-             <DropdownMenuItem onClick={() => router.push('/products')}>
+            <DropdownMenuItem onClick={() => router.push('/products')}>
               <ShoppingBag className="mr-2 h-4 w-4" />
               <span>Master Products</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/summary')}>
-                <AreaChart className="mr-2 h-4 w-4" />
-                <span>Summary</span>
+              <AreaChart className="mr-2 h-4 w-4" />
+              <span>Summary</span>
             </DropdownMenuItem>
-             <DropdownMenuItem onClick={() => router.push('/activity-log')}>
+            <DropdownMenuItem onClick={() => router.push('/activity-log')}>
               <History className="mr-2 h-4 w-4" />
               <span>Activity Log</span>
             </DropdownMenuItem>
           </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <Monitor className="mr-2 h-4 w-4" />
+              <span>Theme</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => setTheme('light')}>
+                  <Sun className="mr-2 h-4 w-4" />
+                  <span>Light</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme('dark')}>
+                  <Moon className="mr-2 h-4 w-4" />
+                  <span>Dark</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme('system')}>
+                  <Monitor className="mr-2 h-4 w-4" />
+                  <span>System</span>
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuPortal>
+          </DropdownMenuSub>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleSignOut}>
             <LogOut className="mr-2 h-4 w-4" />

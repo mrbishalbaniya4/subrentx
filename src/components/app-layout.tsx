@@ -163,7 +163,7 @@ function AppSidebar() {
               isActive={pathname === '/settings'}
               tooltip="Settings"
             >
-              <Link href="#">
+              <Link href="/settings">
                 <Settings />
                 <span>Settings</span>
               </Link>
