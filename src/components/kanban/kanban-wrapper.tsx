@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo, useEffect } from 'react';
@@ -5,7 +6,7 @@ import { KanbanBoard } from '@/components/kanban/kanban-board';
 import { GridView } from '@/components/grid-view/grid-view';
 import { ListView } from '@/components/list-view/list-view';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import type { Item, FilterCategory, FilterUrgency, SortByType, ViewMode } from '@/lib/types';
 import { isPast, isWithinInterval, addDays } from 'date-fns';
 import type { User } from 'firebase/auth';
@@ -39,13 +40,51 @@ export function KanbanWrapper({
 
   const { data: allItems } = useCollection<Item>(itemsQuery);
 
+  // This effect runs once on mount and periodically to check for expired items.
+  useEffect(() => {
+    const checkAndMoveExpiredItems = async () => {
+      if (!allItems || !firestore || !user) return;
+
+      const activeItems = allItems.filter(item => item.status === 'Active' && item.endDate && isPast(new Date(item.endDate)));
+      
+      for (const item of activeItems) {
+        await updateItemStatus(firestore, user.uid, item.id, 'Expired');
+      }
+
+      // Logic for master products: check if they should be 'Sold Out' or 'Active'
+      const masterProducts = allItems.filter(item => !item.parentId);
+      for (const master of masterProducts) {
+        const childrenQuery = query(collection(firestore, 'users', user.uid, 'items'), where('parentId', '==', master.id));
+        const childrenSnapshot = await getDocs(childrenQuery);
+        const hasActiveChild = !childrenSnapshot.empty && childrenSnapshot.docs.some(doc => doc.data().status === 'Active');
+
+        if (hasActiveChild && master.status !== 'Sold Out') {
+           if (master.status !== 'Archived' && master.status !== 'Expired') {
+             await updateItemStatus(firestore, user.uid, master.id, 'Sold Out');
+           }
+        } else if (!hasActiveChild && master.status === 'Sold Out') {
+           if (master.status !== 'Archived' && master.status !== 'Expired') {
+            await updateItemStatus(firestore, user.uid, master.id, 'Active');
+           }
+        }
+      }
+    };
+    
+    checkAndMoveExpiredItems();
+    const intervalId = setInterval(checkAndMoveExpiredItems, 60000); // Check every minute
+
+    return () => clearInterval(intervalId);
+  }, [allItems, firestore, user]);
+
   const itemsForCurrentView = useMemo(() => {
     if (!allItems) return [];
+
+    let relevantItems;
+
     if (itemType === 'master') {
-      return allItems.filter(item => !item.parentId);
+      relevantItems = allItems.filter(item => !item.parentId);
     } else {
-      // For assigned items, augment with master data for profit calculation and expiration
-      return allItems.filter(item => !!item.parentId).map(item => {
+      relevantItems = allItems.filter(item => !!item.parentId).map(item => {
         const master = allItems.find(p => p.id === item.parentId);
         return {
           ...item,
@@ -54,27 +93,9 @@ export function KanbanWrapper({
         };
       });
     }
+    return relevantItems;
   }, [allItems, itemType]);
 
-  // This effect runs once on mount and periodically to check for expired items.
-  useEffect(() => {
-    const checkAndMoveExpiredItems = () => {
-      if (!itemsForCurrentView || !firestore || !user) return;
-
-      itemsForCurrentView.forEach(item => {
-        if (item.endDate && item.status === 'Active') {
-          if (isPast(new Date(item.endDate))) {
-            updateItemStatus(firestore, user.uid, item.id, 'Expired');
-          }
-        }
-      });
-    };
-    
-    checkAndMoveExpiredItems(); // Run on initial load
-    const intervalId = setInterval(checkAndMoveExpiredItems, 60000); // Check every minute
-
-    return () => clearInterval(intervalId); // Cleanup on unmount
-  }, [itemsForCurrentView, firestore, user]);
 
   const processedItems = useMemo(() => {
     if (!itemsForCurrentView) return [];
@@ -132,13 +153,13 @@ export function KanbanWrapper({
     
     switch (viewMode) {
       case 'kanban':
-        return <KanbanBoard initialItems={processedItems || []} />;
+        return <KanbanBoard initialItems={processedItems || []} itemType={itemType} />;
       case 'grid':
         return <GridView items={activeItems || []} />;
       case 'list':
           return <ListView items={activeItems || []} />;
       default:
-        return <KanbanBoard initialItems={processedItems || []} />;
+        return <KanbanBoard initialItems={processedItems || []} itemType={itemType} />;
     }
   };
 

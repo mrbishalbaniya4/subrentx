@@ -61,6 +61,7 @@ import {
   ShieldCheck,
   DollarSign,
   Bell,
+  Tags,
 } from 'lucide-react';
 import { archiveItem, duplicateItem, updateItemStatus, deleteItem } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
@@ -277,10 +278,32 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     }, 0);
   }, [childItems, itemType]);
 
-  const hasExpiredChild = useMemo(() => {
-    if (itemType !== 'master' || !childItems) return false;
-    return childItems.some(child => child.status === 'Expired');
-  }, [childItems, itemType]);
+  const getChildItemStatusBadge = useMemo(() => {
+    if (itemType !== 'master' || !childItems) return null;
+    
+    const expiredChild = childItems.find(child => child.status === 'Expired');
+    if (!expiredChild) return null;
+
+    const masterPasswordChanged = item.lastPasswordChange;
+    const childExpiredDate = expiredChild.endDate;
+
+    if (masterPasswordChanged && childExpiredDate && new Date(masterPasswordChanged) > new Date(childExpiredDate)) {
+      return (
+        <Badge variant="outline" className="flex items-center gap-1.5 border-teal-200 bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300">
+          <Tags className="h-3 w-3" />
+          <span>On Sale</span>
+        </Badge>
+      );
+    }
+    
+    return (
+      <Badge variant="outline" className="flex items-center gap-1.5 border-orange-200 bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
+        <Bell className="h-3 w-3" />
+        <span>Rental Expired</span>
+      </Badge>
+    );
+
+  }, [childItems, itemType, item.lastPasswordChange]);
 
 
   const masterExpirationInfo = () => {
@@ -368,7 +391,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                           </DropdownMenuSubTrigger>
                           <DropdownMenuPortal>
                             <DropdownMenuSubContent>
-                              {(['Active', 'Archived'] as Status[]).map((status) => (
+                              {(['Active', 'Sold Out', 'Archived'] as Status[]).map((status) => (
                                  <DropdownMenuItem
                                   key={status}
                                   disabled={item.status === status || isPending || status === 'Expired'}
@@ -452,12 +475,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                         </Badge>
                     )}
                     {getUrgencyBadge()}
-                     {hasExpiredChild && (
-                        <Badge variant="outline" className="flex items-center gap-1.5 border-orange-200 bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
-                            <Bell className="h-3 w-3" />
-                            <span>Rental Expired</span>
-                        </Badge>
-                     )}
+                    {getChildItemStatusBadge}
                    </div>
                    
                    {masterExpirationInfo()}

@@ -20,18 +20,35 @@ import { updateItemStatus } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser } from '@/firebase';
 
-const columns: { id: Status; title: string }[] = [
-  { id: 'Active', title: 'Active' },
-  { id: 'Expired', title: 'Expired' },
-  { id: 'Archived', title: 'Archived' },
-];
+interface KanbanBoardProps {
+    initialItems: Item[];
+    itemType: 'master' | 'assigned';
+}
 
-export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
+export function KanbanBoard({ initialItems, itemType }: KanbanBoardProps) {
   const [activeItem, setActiveItem] = useState<Item | null>(null);
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
   const [items, setItems] = useState(initialItems);
+
+  let columns: { id: Status; title: string }[];
+
+  if (itemType === 'master') {
+      columns = [
+        { id: 'Active', title: 'Unassigned' },
+        { id: 'Sold Out', title: 'Assigned' },
+        { id: 'Expired', title: 'Expired' },
+        { id: 'Archived', title: 'Archived' },
+      ];
+  } else {
+      columns = [
+        { id: 'Active', title: 'Active' },
+        { id: 'Expired', title: 'Expired' },
+        { id: 'Archived', title: 'Archived' },
+      ];
+  }
+
 
   // This effect ensures that the local state is updated whenever the server sends new data.
   // This is the single source of truth.
@@ -166,7 +183,7 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
   };
 
   return (
-    <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
       <DndContext
         sensors={sensors}
         onDragStart={handleDragStart}
