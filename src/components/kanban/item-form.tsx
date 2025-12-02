@@ -99,11 +99,14 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
 
   const availableMasterProducts = useMemo(() => {
     if (!allItems) return [];
-    return allItems.filter(item => 
-        !item.parentId && 
-        item.status === 'Active' &&
-        item.endDate && 
-        !isPast(new Date(item.endDate))
+    // Get a set of all parent IDs that are already in use by assigned items
+    const assignedMasterIds = new Set(allItems.filter(i => i.parentId).map(i => i.parentId));
+
+    return allItems.filter(p => 
+        !p.parentId && // It is a master product
+        p.status === 'Active' && // It is active
+        p.endDate && !isPast(new Date(p.endDate)) && // It is not expired
+        !assignedMasterIds.has(p.id) // It is not already assigned to another sub-product
     );
   }, [allItems]);
 
@@ -170,7 +173,8 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
 
     // Date validation for sub-products
     if (values.parentId && values.startDate && values.endDate) {
-      const master = availableMasterProducts.find(p => p.id === values.parentId);
+      // Find master in allItems, not just available ones, in case it was just assigned
+      const master = allItems?.find(p => p.id === values.parentId);
       if (master && master.startDate && master.endDate) {
         const masterStart = parseISO(master.startDate);
         const masterEnd = parseISO(master.endDate);
@@ -189,8 +193,8 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
         const itemData: Partial<Item> = {
             ...values,
             parentId: isMasterProductForm ? null : values.parentId,
-            startDate: values.startDate && isValid(new Date(values.startDate)) ? new Date(values.startDate).toISOString() : '',
-            endDate: values.endDate && isValid(new Date(values.endDate)) ? new Date(values.endDate).toISOString() : '',
+            startDate: values.startDate && isValid(new Date(values.startDate)) ? new Date(values.startDate).toISOString() : undefined,
+            endDate: values.endDate && isValid(new Date(values.endDate)) ? new Date(values.endDate).toISOString() : undefined,
         };
 
         if (passwordChanged) {
@@ -549,5 +553,3 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     </Form>
   );
 }
-
-    
