@@ -267,11 +267,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     return childItems.reduce((acc, child) => {
         const salePrice = child.purchasePrice || 0;
         const cost = child.masterPrice || 0;
-        // We only consider profit from completed/sold items
-        if (child.status === 'Expired' || child.status === 'Archived') {
-            return acc + (salePrice - cost);
-        }
-        return acc;
+        return acc + (salePrice - cost);
     }, 0);
   }, [childItems, itemType]);
 

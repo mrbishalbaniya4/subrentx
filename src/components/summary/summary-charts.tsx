@@ -23,32 +23,24 @@ export function SummaryCharts({ items }: SummaryChartsProps) {
   const monthlyProfitData = React.useMemo(() => {
     const profitByMonth: { [key: string]: number } = {};
 
-     // Subtract costs of all master products
+    // Process all items to calculate instant profit/loss in the month of creation
     items.forEach(item => {
-      if (!item.parentId && item.createdAt) {
-        const month = format(item.createdAt.toDate(), 'yyyy-MM');
-        const cost = item.purchasePrice || 0;
-        if (profitByMonth[month]) {
-          profitByMonth[month] -= cost;
-        } else {
-          profitByMonth[month] = -cost;
-        }
+      if (!item.createdAt) return;
+      const month = format(item.createdAt.toDate(), 'yyyy-MM');
+
+      if (!profitByMonth[month]) {
+        profitByMonth[month] = 0;
+      }
+
+      // If it's a master product, it's a cost
+      if (!item.parentId) {
+        profitByMonth[month] -= item.purchasePrice || 0;
+      } 
+      // If it's an assigned item, it's revenue
+      else {
+        profitByMonth[month] += item.purchasePrice || 0;
       }
     });
-
-    // Add revenue from all assigned items
-    items.forEach(item => {
-      if (item.parentId && item.createdAt) {
-        const month = format(item.createdAt.toDate(), 'yyyy-MM');
-        const revenue = item.purchasePrice || 0;
-        if (profitByMonth[month]) {
-          profitByMonth[month] += revenue;
-        } else {
-          profitByMonth[month] = revenue;
-        }
-      }
-    });
-
 
     return Object.entries(profitByMonth)
       .map(([month, profit]) => ({
@@ -62,7 +54,7 @@ export function SummaryCharts({ items }: SummaryChartsProps) {
     <Card>
       <CardHeader>
         <CardTitle>Monthly Profit</CardTitle>
-        <CardDescription>A summary of profit generated from completed rentals each month.</CardDescription>
+        <CardDescription>A summary of revenue minus costs for each month.</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
