@@ -174,6 +174,8 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
   
   const isMasterProductSelection = !parentId || parentId === 'none';
   const finalIsMasterProduct = (isMasterProductForm) || (isCreatingAssignment && isMasterProductSelection);
+  const datesAreDisabled = isEditingAssignment;
+
 
   const onSubmit = (values: ItemFormValues) => {
     if (!user || !firestore) {
@@ -620,7 +622,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                   <FormItem>
                     <FormLabel>Start Date</FormLabel>
                     <FormControl>
-                      <Input type="datetime-local" {...field} disabled={!finalIsMasterProduct} />
+                      <Input type="datetime-local" {...field} disabled={datesAreDisabled} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -634,7 +636,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                     <FormLabel>End Date</FormLabel>
                     <div className="relative">
                       <FormControl>
-                        <Input type="datetime-local" {...field} disabled={!finalIsMasterProduct} />
+                        <Input type="datetime-local" {...field} disabled={datesAreDisabled} />
                       </FormControl>
                       <Button
                         type="button"
@@ -642,7 +644,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                         variant="ghost"
                         className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-accent"
                         onClick={handleSuggestDate}
-                        disabled={isSuggesting || !finalIsMasterProduct}
+                        disabled={isSuggesting || datesAreDisabled}
                         aria-label="Suggest End Date"
                       >
                         {isSuggesting ? (
@@ -662,7 +664,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                           size="sm"
                           onClick={() => setEndDateInDays(days)}
                           className="text-xs"
-                          disabled={!finalIsMasterProduct}
+                          disabled={datesAreDisabled}
                         >
                           {days}d
                         </Button>
