@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -23,6 +23,12 @@ export default function ActivityLogPage() {
   const firestore = useFirestore();
   const router = useRouter();
 
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [isUserLoading, user, router]);
+
   const activityLogQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
@@ -33,17 +39,12 @@ export default function ActivityLogPage() {
 
   const { data: activityLogs, isLoading: areLogsLoading } = useCollection<ActivityLog>(activityLogQuery);
 
-  if (isUserLoading || (!activityLogs && areLogsLoading)) {
+  if (isUserLoading || !user || (!activityLogs && areLogsLoading)) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin" />
       </div>
     );
-  }
-
-  if (!user) {
-    router.push('/login');
-    return null;
   }
 
   return (
