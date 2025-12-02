@@ -10,7 +10,6 @@ import type { Item, FilterCategory, FilterUrgency, SortByType, ViewMode } from '
 import { isPast, isWithinInterval, addDays } from 'date-fns';
 import type { User } from 'firebase/auth';
 import { updateItemStatus } from '@/firebase/firestore/mutations';
-import { ProductList } from '@/components/products/product-list';
 
 interface KanbanWrapperProps {
     user: User;
@@ -136,10 +135,6 @@ export function KanbanWrapper({
   const renderView = () => {
     const activeItems = processedItems.filter(item => item.status !== 'Archived');
     
-    if (itemType === 'master') {
-      return <ProductList items={activeItems} />;
-    }
-
     switch (viewMode) {
       case 'kanban':
         return <KanbanBoard initialItems={processedItems || []} />;
