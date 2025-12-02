@@ -183,7 +183,7 @@ export function KanbanBoard({ initialItems, itemType }: KanbanBoardProps) {
   };
 
   return (
-    <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid h-full w-full gap-4 [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
       <DndContext
         sensors={sensors}
         onDragStart={handleDragStart}
