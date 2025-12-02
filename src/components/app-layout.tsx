@@ -56,9 +56,7 @@ export function AppLayout({
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
   const [filterUrgency, setFilterUrgency] = useState<FilterUrgency>('all');
   const [sortBy, setSortBy] = useState<SortByType>('createdAt');
-  const [viewMode, setViewMode] = useState<ViewMode>(
-    itemType === 'master' ? 'list' : 'kanban'
-  );
+  const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   const [isClient, setIsClient] = useState(false);
   const isMobile = useIsMobile();
 

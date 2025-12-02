@@ -29,21 +29,9 @@ export function KanbanWrapper({
     filterCategory = 'all',
     filterUrgency = 'all',
     sortBy = 'createdAt',
-    viewMode: initialViewMode = 'kanban'
+    viewMode = 'kanban'
 }: KanbanWrapperProps) {
   const firestore = useFirestore();
-
-  const [viewMode, setViewMode] = useState(initialViewMode);
-    
-  // Adjust the default view mode based on the item type.
-  useEffect(() => {
-    if (itemType === 'master') {
-      setViewMode(initialViewMode === 'kanban' ? 'list' : initialViewMode);
-    } else {
-      setViewMode(initialViewMode);
-    }
-  }, [itemType, initialViewMode]);
-
 
   const itemsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;

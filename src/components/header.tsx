@@ -113,17 +113,15 @@ export function Header({
               </div>
 
                <div className="hidden items-center gap-1 rounded-lg border bg-background p-1 md:flex">
-                  {itemType === 'assigned' && (
-                     <Button
-                        variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
-                        size="icon"
-                        onClick={() => onViewModeChange('kanban')}
-                        className={cn(viewMode === 'kanban' && 'shadow-sm')}
-                      >
-                        <KanbanSquare className="h-5 w-5" />
-                        <span className="sr-only">Kanban View</span>
-                      </Button>
-                  )}
+                  <Button
+                    variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+                    size="icon"
+                    onClick={() => onViewModeChange('kanban')}
+                    className={cn(viewMode === 'kanban' && 'shadow-sm')}
+                  >
+                    <KanbanSquare className="h-5 w-5" />
+                    <span className="sr-only">Kanban View</span>
+                  </Button>
                   <Button
                     variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
                     size="icon"
