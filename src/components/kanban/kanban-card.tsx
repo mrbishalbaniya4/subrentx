@@ -341,7 +341,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent>
-                    {(['Active', 'Sold Out', 'Expired', 'Archived'] as Status[]).map((status) => (
+                    {(['Active', 'Expired', 'Archived'] as Status[]).map((status) => (
                        <DropdownMenuItem
                         key={status}
                         disabled={item.status === status || isPending}

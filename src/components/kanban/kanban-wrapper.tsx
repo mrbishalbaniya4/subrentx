@@ -29,9 +29,21 @@ export function KanbanWrapper({
     filterCategory = 'all',
     filterUrgency = 'all',
     sortBy = 'createdAt',
-    viewMode = 'kanban'
+    viewMode: initialViewMode = 'kanban'
 }: KanbanWrapperProps) {
   const firestore = useFirestore();
+
+  const [viewMode, setViewMode] = useState(initialViewMode);
+    
+  // Adjust the default view mode based on the item type.
+  useEffect(() => {
+    if (itemType === 'master') {
+      setViewMode(initialViewMode === 'kanban' ? 'list' : initialViewMode);
+    } else {
+      setViewMode(initialViewMode);
+    }
+  }, [itemType, initialViewMode]);
+
 
   const itemsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -53,7 +65,7 @@ export function KanbanWrapper({
 
     const now = new Date();
     filteredItems.forEach(item => {
-      if (item.endDate && item.status !== 'Expired' && item.status !== 'Archived' && item.status !== 'Sold Out') {
+      if (item.endDate && item.status !== 'Expired' && item.status !== 'Archived') {
         const endDate = new Date(item.endDate);
         if (isPast(endDate)) {
           updateItemStatus(firestore, user.uid, item.id, 'Expired');

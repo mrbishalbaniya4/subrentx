@@ -1,6 +1,6 @@
 import type { Timestamp } from 'firebase/firestore';
 
-export type Status = 'Active' | 'Sold Out' | 'Expired' | 'Archived';
+export type Status = 'Active' | 'Expired' | 'Archived';
 export type Category = 'Work' | 'Personal' | 'Finance' | 'Shopping' | 'Social' | 'Travel' | 'Other';
 export type FilterCategory = 'all' | Category;
 export type FilterUrgency = 'all' | 'soon-to-expire' | 'expired';

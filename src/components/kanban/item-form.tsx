@@ -46,7 +46,7 @@ const itemSchema = z.object({
   notes: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  status: z.enum(['Active', 'Sold Out', 'Expired', 'Archived']),
+  status: z.enum(['Active', 'Expired', 'Archived']),
   category: z.enum(['Work', 'Personal', 'Finance', 'Shopping', 'Social', 'Travel', 'Other']).optional(),
   contactName: z.string().optional(),
   contactValue: z.string().optional(),
@@ -671,5 +671,3 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
     </Form>
   );
 }
-
-    

@@ -20,9 +20,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser } from '@/firebase';
 
 const columns: { id: Status; title: string }[] = [
-  { id: 'Expired', title: 'Expired' },
   { id: 'Active', title: 'Active' },
-  { id: 'Sold Out', title: 'Sold Out' },
+  { id: 'Expired', title: 'Expired' },
   { id: 'Archived', title: 'Archived' },
 ];
 
@@ -161,7 +160,7 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
   };
 
   return (
-    <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       <DndContext
         sensors={sensors}
         onDragStart={handleDragStart}
