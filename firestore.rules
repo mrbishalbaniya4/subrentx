@@ -1,8 +1,9 @@
 /**
- * Core Philosophy: This ruleset enforces a strict user-ownership model. All data is
- * sandboxed to the authenticated user, meaning a user can only ever access their own
- * information and the items they create. Unauthorized access to other users' data is
- * strictly prohibited.
+ * Core Philosophy: This ruleset enforces a strict user-ownership model, with an
+ * exception for a designated admin user. All data is sandboxed to the authenticated
+ * user, meaning a user can only ever access their own information and the items they
+ * create. The admin user has read-only access to all data for administrative purposes.
+ * Unauthorized access to other users' data is strictly prohibited for non-admin users.
  *
  * Data Structure: The data is organized hierarchically to reflect ownership clearly.
  * A top-level 'users' collection holds user profile documents. All other data,
@@ -10,6 +11,8 @@
  * the user's document (e.g., /users/{userId}/items/{itemId}).
  *
  * Key Security Decisions:
+ * - Admin Role: An admin user ('mrbishalbaniya4@gmail.com') is granted read access
+ *   across all user data. This is for administrative oversight.
  * - User Enumeration Disabled: Listing the top-level '/users' collection is disallowed
  *   to prevent malicious actors from scraping a list of all application users.
  * - Path-Based Security: Rules primarily rely on the document path to determine ownership
@@ -42,6 +45,13 @@ service cloud.firestore {
      */
     function isSignedIn() {
       return request.auth != null;
+    }
+    
+    /**
+     * Returns true if the logged-in user is the designated admin.
+     */
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'mrbishalbaniya4@gmail.com';
     }
 
     /**
@@ -113,12 +123,12 @@ service cloud.firestore {
     /**
      * @description Controls access to user profile documents.
      * @path /users/{userId}
-     * @allow (create) An authenticated user can create their own profile document.
-     * @deny (get) A user cannot read another user's profile.
-     * @principle Restricts access to a user's own data tree and prevents user enumeration.
+     * @allow (get) An authenticated user can read their own profile, or an admin can read any profile.
+     * @deny (list) Disallows listing all users to prevent user enumeration.
+     * @principle Restricts access to a user's own data tree, with an exception for admin read access.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
+      allow get: if isOwner(userId) || isAdmin();
       allow list: if false; // Disallow listing all users for security
       allow create: if isOwner(userId) && hasValidUserId(userId);
       allow update: if isExistingOwner(userId) && isUserIdImmutable();
@@ -127,13 +137,14 @@ service cloud.firestore {
       /**
        * @description Controls access to a user's private vault items.
        * @path /users/{userId}/items/{itemId}
-       * @allow (create, get, list, update, delete) A user can perform all operations on items within their own user space.
-       * @deny (get) A user cannot read items belonging to another user.
-       * @principle Enforces document ownership for all operations within a user-specific subcollection.
+       * @allow (read, list) A user can read their own items, or an admin can read any user's items.
+       * @allow (write) Only the owner of the items can create, update, or delete them.
+       * @deny A user cannot read or write items belonging to another user.
+       * @principle Enforces document ownership for all write operations, but allows admin read access.
        */
       match /items/{itemId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) || isAdmin();
+        allow list: if isOwner(userId) || isAdmin();
         allow create: if isOwner(userId) && hasValidItemData(userId);
         allow update: if isExistingOwner(userId) && isItemUserIdImmutable() && isItemCreationTimestampImmutable();
         allow delete: if isExistingOwner(userId);
@@ -142,12 +153,13 @@ service cloud.firestore {
       /**
        * @description Controls access to a user's activity log.
        * @path /users/{userId}/activity-logs/{logId}
-       * @allow (read, list, create) A user can read their own logs and the system can create them.
+       * @allow (read, list) A user can read their own logs, or an admin can read any user's logs.
+       * @allow (create) Only the owner can have logs created under their profile.
        * @deny (update, delete) Logs are immutable.
        */
       match /activity-logs/{logId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) || isAdmin();
+        allow list: if isOwner(userId) || isAdmin();
         allow create: if isOwner(userId) && hasValidLogData(userId);
         allow update: if false;
         allow delete: if false;
