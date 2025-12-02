@@ -271,7 +271,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
     });
   };
 
-  if (isEditingAssignment && item) {
+  if (isEditingAssignment) {
     const durationDays = item.startDate && item.endDate ? differenceInDays(new Date(item.endDate), new Date(item.startDate)) : 0;
     const profit = (item.purchasePrice ?? 0) - (item.masterPrice ?? 0);
     const isProfit = profit > 0;
@@ -590,6 +590,22 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
               </FormItem>
             )}
           />
+           <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder={finalIsMasterProduct ? "Add notes for this master product..." : "Add notes for this assignment..."}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
         </div>
 
         <Separator />
