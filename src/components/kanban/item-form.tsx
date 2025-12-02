@@ -122,15 +122,29 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
 
   const availableMasterProducts = useMemo(() => {
     if (!allItems) return [];
-    const assignedMasterIds = new Set(allItems.filter(i => i.parentId && i.id !== item?.id).map(i => i.parentId));
     
-    return allItems.filter(p => 
+    // Find all master products that are themselves active and not expired.
+    const activeMasters = allItems.filter(p => 
         !p.parentId && 
         p.status === 'Active' && 
-        p.endDate && !isPast(new Date(p.endDate)) &&
-        !assignedMasterIds.has(p.id)
+        p.endDate && !isPast(new Date(p.endDate))
+    );
+
+    // Find all assignments that are still active (not expired).
+    const activeAssignments = allItems.filter(a => 
+      a.parentId && a.endDate && !isPast(new Date(a.endDate))
+    );
+
+    // Get the IDs of the master products that are tied to active assignments.
+    const assignedMasterIds = new Set(activeAssignments.map(a => a.parentId));
+
+    // A master product is available if it's active AND it's not in the set of actively assigned masters.
+    // If we are editing an existing item, we should also include its own master product in the list.
+    return activeMasters.filter(p => 
+      !assignedMasterIds.has(p.id) || (item && p.id === item.parentId)
     );
   }, [allItems, item]);
+
 
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
