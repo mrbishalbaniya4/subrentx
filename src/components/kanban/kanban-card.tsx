@@ -57,7 +57,8 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  Info
+  Info,
+  ShieldCheck,
 } from 'lucide-react';
 import { archiveItem, duplicateItem, updateItemStatus, deleteItem } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
@@ -276,6 +277,20 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
       return { text: `$${profit.toFixed(2)}`, className, Icon };
   }, [item.masterPrice, item.purchasePrice, itemType]);
 
+  const masterExpirationInfo = () => {
+    if (itemType !== 'assigned' || !item.masterEndDate) return null;
+
+    const masterEndDate = new Date(item.masterEndDate);
+    const distanceText = formatDistanceToNow(masterEndDate, { addSuffix: true });
+    
+    return (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+            <ShieldCheck className="h-3 w-3 text-blue-500" />
+            <span>Master expires {distanceText}</span>
+        </div>
+    );
+  };
+
 
   return (
     <>
@@ -432,6 +447,8 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                     )}
                     {getUrgencyBadge()}
                    </div>
+                   
+                   {masterExpirationInfo()}
 
                     <div className="flex items-center gap-1.5 pt-2 text-xs text-muted-foreground">
                       <RefreshCcw className="h-3 w-3" />

@@ -44,12 +44,13 @@ export function KanbanWrapper({
     if (itemType === 'master') {
       return allItems.filter(item => !item.parentId);
     } else {
-      // For assigned items, augment with masterPrice for profit calculation
+      // For assigned items, augment with master data for profit calculation and expiration
       return allItems.filter(item => !!item.parentId).map(item => {
         const master = allItems.find(p => p.id === item.parentId);
         return {
           ...item,
           masterPrice: master?.purchasePrice ?? 0,
+          masterEndDate: master?.endDate,
         };
       });
     }
