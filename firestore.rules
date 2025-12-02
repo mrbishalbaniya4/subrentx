@@ -66,6 +66,8 @@ service cloud.firestore {
     }
 
     function isAdminUpdatingProfile() {
+        // Admin can update any profile, including changing the status.
+        // The ID of the document must remain immutable.
         return isAdmin() && request.resource.data.id == resource.data.id;
     }
     
@@ -94,12 +96,12 @@ service cloud.firestore {
        * @description Controls access to individual user profile documents.
        * @allow (get) Any signed-in user can read their own profile. Admin can read any profile.
        * @allow (list) Only the admin can list users.
-       * @allow (create) A user can create their own profile with 'pending' status.
+       * @allow (create) A user can create their own profile with 'pending' status. Admin can also create a user.
        * @allow (update) A user can update their own profile (but not status). Admin can update anything.
        */
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
-      allow create: if isCreatingOwnPendingUser(userId);
+      allow create: if isCreatingOwnPendingUser(userId) || isAdmin();
       allow update: if isUpdatingOwnProfile(userId) || isAdminUpdatingProfile();
       allow delete: if false;
 
