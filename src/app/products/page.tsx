@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useUser } from '@/firebase';
 import { KanbanWrapper } from '@/components/kanban/kanban-wrapper';
 import { Loader2 } from 'lucide-react';
@@ -27,9 +27,7 @@ export default function ProductsPage() {
 
   return (
      <AppLayout pageTitle="Master Products" itemType="master">
-        <Suspense fallback={<div className="flex-1 p-6">Loading...</div>}>
-            <KanbanWrapper user={user} itemType="master" />
-        </Suspense>
+        <KanbanWrapper user={user} itemType="master" />
     </AppLayout>
   );
 }
