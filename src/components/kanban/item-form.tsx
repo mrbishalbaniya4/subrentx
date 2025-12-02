@@ -46,7 +46,7 @@ const itemSchema = z.object({
   notes: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  status: z.enum(['Active', 'Expired', 'Archived']),
+  status: z.enum(['Active', 'Sold Out', 'Expired', 'Archived']),
   category: z.enum(['Apeuni', 'Netflix', 'Amazon', 'Spotify', 'Hulu', 'Other']).optional(),
   contactName: z.string().optional(),
   contactValue: z.string().optional(),
@@ -233,6 +233,11 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
             startDate: values.startDate && isValid(new Date(values.startDate)) ? new Date(values.startDate).toISOString() : undefined,
             endDate: values.endDate && isValid(new Date(values.endDate)) ? new Date(values.endDate).toISOString() : undefined,
         };
+        
+        // This is the fix: ensure undefined is not passed for dates
+        if (!itemData.startDate) delete itemData.startDate;
+        if (!itemData.endDate) delete itemData.endDate;
+
 
         if (passwordChanged) {
             itemData.lastPasswordChange = new Date().toISOString();
@@ -611,5 +616,3 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     </Form>
   );
 }
-
-    
