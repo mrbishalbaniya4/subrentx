@@ -80,6 +80,26 @@ const strengthLabels = [
     'Strong',
 ];
 
+const formatCountdown = (endDate: string | undefined): string | null => {
+    if (!endDate || !isValid(new Date(endDate))) return null;
+
+    const now = new Date();
+    const end = new Date(endDate);
+    const distance = end.getTime() - now.getTime();
+
+    if (distance < 0) {
+        return "Expired";
+    }
+
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+};
+
+
 export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -87,7 +107,9 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [passwordChanged, setPasswordChanged] = useState(false);
-  const [countdown, setCountdown] = useState<string | null>(null);
+  const [masterCountdown, setMasterCountdown] = useState<string | null>(null);
+  const [assignmentCountdown, setAssignmentCountdown] = useState<string | null>(null);
+
   const { user } = useUser();
   const firestore = useFirestore();
 
@@ -100,15 +122,15 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
 
   const availableMasterProducts = useMemo(() => {
     if (!allItems) return [];
-    const assignedMasterIds = new Set(allItems.filter(i => i.parentId).map(i => i.parentId));
-
+    const assignedMasterIds = new Set(allItems.filter(i => i.parentId && i.id !== item?.id).map(i => i.parentId));
+    
     return allItems.filter(p => 
         !p.parentId && 
         p.status === 'Active' && 
         p.endDate && !isPast(new Date(p.endDate)) &&
         !assignedMasterIds.has(p.id)
     );
-  }, [allItems]);
+  }, [allItems, item]);
 
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
@@ -141,6 +163,8 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
   });
   
   const parentId = form.watch('parentId');
+  const assignmentEndDate = form.watch('endDate');
+
   const selectedMaster = useMemo(() => {
       if (!parentId || !allItems) return null;
       return allItems.find(p => p.id === parentId);
@@ -150,13 +174,15 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
   // Effect to auto-fill form when a master product is selected for a new assignment
   useEffect(() => {
     if (itemType === 'assigned' && !item && parentId) { // Creating new assignment
-        const selectedMaster = availableMasterProducts.find(p => p.id === parentId);
-        if (selectedMaster) {
-            form.setValue('name', selectedMaster.name);
-            form.setValue('username', selectedMaster.username);
-            form.setValue('password', selectedMaster.password || ''); 
-            form.setValue('category', selectedMaster.category);
-            form.setValue('purchasePrice', selectedMaster.purchasePrice);
+        const master = availableMasterProducts.find(p => p.id === parentId);
+        if (master) {
+            form.setValue('name', master.name);
+            form.setValue('username', master.username);
+            form.setValue('password', master.password || ''); 
+            form.setValue('category', master.category);
+            form.setValue('purchasePrice', master.purchasePrice);
+            if (master.startDate) form.setValue('startDate', format(new Date(master.startDate), "yyyy-MM-dd'T'HH:mm"));
+            if (master.endDate) form.setValue('endDate', format(new Date(master.endDate), "yyyy-MM-dd'T'HH:mm"));
         }
     }
   }, [parentId, availableMasterProducts, form, item, itemType]);
@@ -280,32 +306,45 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     });
   };
 
+  // Master product countdown timer
   useEffect(() => {
-    if (!selectedMaster || !selectedMaster.endDate || !isValid(new Date(selectedMaster.endDate))) {
-      setCountdown(null);
+    if (!selectedMaster) {
+      setMasterCountdown(null);
       return;
     }
-
     const intervalId = setInterval(() => {
-      const now = new Date();
-      const end = new Date(selectedMaster.endDate!);
-      const distance = end.getTime() - now.getTime();
-
-      if (distance < 0) {
-        setCountdown("Expired");
+      const countdownStr = formatCountdown(selectedMaster.endDate);
+      setMasterCountdown(countdownStr);
+      if (countdownStr === "Expired") {
         clearInterval(intervalId);
-        return;
       }
-
-      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-      setCountdown(`${days}d ${hours}h ${minutes}m ${seconds}s remaining`);
     }, 1000);
-
     return () => clearInterval(intervalId);
+  }, [selectedMaster]);
+
+  // Assignment countdown timer
+  useEffect(() => {
+    if (!assignmentEndDate) {
+      setAssignmentCountdown(null);
+      return;
+    }
+    const intervalId = setInterval(() => {
+        const countdownStr = formatCountdown(assignmentEndDate);
+        setAssignmentCountdown(countdownStr);
+        if (countdownStr === "Expired") {
+            clearInterval(intervalId);
+        }
+    }, 1000);
+    return () => clearInterval(intervalId);
+  }, [assignmentEndDate]);
+
+
+  const masterProductDuration = useMemo(() => {
+    if (!selectedMaster || !selectedMaster.startDate || !selectedMaster.endDate) return null;
+    const start = new Date(selectedMaster.startDate);
+    const end = new Date(selectedMaster.endDate);
+    if (!isValid(start) || !isValid(end)) return null;
+    return differenceInDays(end, start);
   }, [selectedMaster]);
 
   return (
@@ -536,9 +575,14 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
                     <FormControl>
                       <Input type="datetime-local" {...field} />
                     </FormControl>
-                    {countdown && (
+                    {masterProductDuration !== null && (
                       <FormDescription>
-                        Time remaining: {countdown}
+                        Master product is valid for {masterProductDuration} days.
+                      </FormDescription>
+                    )}
+                    {masterCountdown && (
+                      <FormDescription>
+                        Master expires in: {masterCountdown}
                       </FormDescription>
                     )}
                     <FormMessage />
@@ -566,6 +610,11 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
                         </Button>
                       ))}
                     </div>
+                    {assignmentCountdown && (
+                        <FormDescription>
+                            Assignment ends in: {assignmentCountdown}
+                        </FormDescription>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -586,3 +635,5 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     </Form>
   );
 }
+
+    
