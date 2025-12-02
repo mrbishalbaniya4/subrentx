@@ -27,6 +27,7 @@ export default function RootLayout({
         />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name="theme-color" content="#1a1a1a" />
+        <link rel="icon" href="/logo.svg" type="image/svg+xml" sizes="any" />
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
