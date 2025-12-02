@@ -1,7 +1,7 @@
 'use client';
 
 import type { Item, Category, Status } from '@/lib/types';
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { format, isPast, formatDistanceToNow, differenceInDays } from 'date-fns';
 import {
@@ -191,16 +191,16 @@ export function ListItem({ item }: ListItemProps) {
     return { text: distanceText, className: 'text-green-600 dark:text-green-500' };
   };
 
-  const getProfitLossInfo = () => {
+  const profitLoss = useMemo(() => {
     if (typeof item.masterPrice !== 'number' || typeof item.purchasePrice !== 'number') {
-      return { text: 'N/A', className: '' };
+      return { text: 'N/A', className: '', Icon: Minus };
     }
   
     const profit = item.purchasePrice - item.masterPrice;
     const isProfit = profit > 0;
     const isLoss = profit < 0;
     
-    let className = 'text-gray-600 dark:text-gray-400';
+    let className = 'text-gray-500 dark:text-gray-400';
     let Icon = Minus;
 
     if (isProfit) {
@@ -216,10 +216,9 @@ export function ListItem({ item }: ListItemProps) {
       className,
       Icon
     };
-  }
+  }, [item.masterPrice, item.purchasePrice])
 
   const urgency = getUrgencyInfo();
-  const profitLoss = getProfitLossInfo();
   const itemType = item.parentId ? 'assigned' : 'master';
 
   return (

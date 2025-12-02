@@ -49,7 +49,7 @@ export function KanbanWrapper({
         const master = allItems.find(p => p.id === item.parentId);
         return {
           ...item,
-          masterPrice: master?.purchasePrice || 0,
+          masterPrice: master?.purchasePrice ?? 0,
         };
       });
     }
