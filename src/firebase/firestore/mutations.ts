@@ -414,30 +414,31 @@ export async function saveUserProfile(
   }
 }
 
-export async function updateUserStatus(
-    firestore: Firestore,
-    userId: string,
-    newStatus: 'pending' | 'active' | 'suspended'
-): Promise<void> {
-    const userRef = doc(firestore, 'users', userId);
-    const dataToSave = {
-        status: newStatus,
-        updatedAt: serverTimestamp(),
-    };
+export function updateUserStatus(
+  firestore: Firestore,
+  userId: string,
+  newStatus: 'pending' | 'active' | 'suspended'
+) {
+  const userRef = doc(firestore, 'users', userId);
+  const dataToSave = {
+    status: newStatus,
+    updatedAt: serverTimestamp(),
+  };
 
-    try {
-        await updateDoc(userRef, dataToSave);
-    } catch (error) {
-        console.error('Error updating user status:', error);
-        errorEmitter.emit(
-            'permission-error',
-            new FirestorePermissionError({
-                path: userRef.path,
-                operation: 'update',
-                requestResourceData: dataToSave,
-            })
-        );
-        throw error;
-    }
+  // Use non-blocking update with .catch() for error handling
+  updateDoc(userRef, dataToSave).catch(async (serverError) => {
+    // Construct the detailed error object
+    const permissionError = new FirestorePermissionError({
+      path: userRef.path,
+      operation: 'update',
+      requestResourceData: {
+        status: newStatus,
+        updatedAt: new Date().toISOString(), // Use client-side timestamp for the error report
+      },
+    });
+
+    // Emit the error through the global emitter
+    errorEmitter.emit('permission-error', permissionError);
+  });
 }
     
