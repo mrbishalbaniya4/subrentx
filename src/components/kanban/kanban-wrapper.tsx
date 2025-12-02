@@ -29,19 +29,9 @@ export function KanbanWrapper({
     filterCategory = 'all',
     filterUrgency = 'all',
     sortBy = 'createdAt',
-    viewMode: initialViewMode = 'kanban'
+    viewMode = 'kanban'
 }: KanbanWrapperProps) {
   const firestore = useFirestore();
-  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
-  
-  useEffect(() => {
-    if (itemType === 'master' && initialViewMode === 'kanban') {
-        setViewMode('list');
-    } else {
-        setViewMode(initialViewMode);
-    }
-  }, [itemType, initialViewMode]);
-
 
   const itemsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -126,12 +116,9 @@ export function KanbanWrapper({
   const renderView = () => {
     const activeItems = processedItems.filter(item => item.status !== 'Archived');
     
-    // Always show all items for Master Product Kanban view
-    const kanbanItems = itemType === 'master' ? processedItems : processedItems;
-
     switch (viewMode) {
       case 'kanban':
-        return <KanbanBoard initialItems={kanbanItems || []} />;
+        return <KanbanBoard initialItems={processedItems || []} />;
       case 'grid':
         return <GridView items={activeItems || []} />;
       case 'list':
@@ -140,10 +127,7 @@ export function KanbanWrapper({
         }
         return <ListView items={activeItems || []} />;
       default:
-        if (itemType === 'master') {
-            return <ProductList items={processedItems || []} />;
-        }
-        return <KanbanBoard initialItems={kanbanItems || []} />;
+        return <KanbanBoard initialItems={processedItems || []} />;
     }
   };
 
