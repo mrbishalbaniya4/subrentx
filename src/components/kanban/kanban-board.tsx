@@ -183,30 +183,30 @@ export function KanbanBoard({ initialItems, itemType }: KanbanBoardProps) {
   };
 
   return (
-    <div className="grid h-full w-full gap-4 [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
-      <DndContext
-        sensors={sensors}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-        collisionDetection={closestCorners}
-      >
-        {columns.map(column => {
-          const columnItems = items.filter(item => item.status === column.id);
-          return (
-            <KanbanColumn
-              key={column.id}
-              id={column.id}
-              title={column.title}
-              items={columnItems}
-              isDropDisabled={column.id === 'Expired'}
-            />
-          );
-        })}
-        <DragOverlay>
-          {activeItem ? <KanbanCard item={activeItem} isOverlay /> : null}
-        </DragOverlay>
-      </DndContext>
-    </div>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+      collisionDetection={closestCorners}
+    >
+        <div className="flex flex-col gap-8 md:grid md:gap-4 md:[grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
+            {columns.map(column => {
+            const columnItems = items.filter(item => item.status === column.id);
+            return (
+                <KanbanColumn
+                key={column.id}
+                id={column.id}
+                title={column.title}
+                items={columnItems}
+                isDropDisabled={column.id === 'Expired'}
+                />
+            );
+            })}
+        </div>
+      <DragOverlay>
+        {activeItem ? <KanbanCard item={activeItem} isOverlay /> : null}
+      </DragOverlay>
+    </DndContext>
   );
 }

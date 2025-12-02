@@ -38,7 +38,7 @@ export function KanbanColumn({ id, title, items, isDropDisabled = false }: Kanba
            isDropDisabled && 'bg-muted/50'
         )}
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex min-h-[4rem] flex-col gap-4">
           <SortableContext items={itemIds}>
             {items.length > 0 ? (
               items.map(item => <KanbanCard key={item.id} item={item} />)
