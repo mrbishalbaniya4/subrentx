@@ -175,6 +175,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
   
   const parentId = form.watch('parentId');
   const assignmentEndDate = form.watch('endDate');
+  const startDateValue = form.watch('startDate');
 
   const selectedMaster = useMemo(() => {
       if (!parentId || !allItems) return null;
@@ -285,7 +286,10 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
   };
 
   const setEndDateInDays = (days: number) => {
-    const newEndDate = addDays(new Date(), days);
+    const start = startDateValue && isValid(new Date(startDateValue)) 
+      ? new Date(startDateValue) 
+      : new Date();
+    const newEndDate = addDays(start, days);
     form.setValue('endDate', format(newEndDate, "yyyy-MM-dd'T'HH:mm"), {
       shouldValidate: true,
     });
