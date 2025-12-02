@@ -7,6 +7,8 @@ import { doc } from 'firebase/firestore';
 import { AppLayout } from '@/components/app-layout';
 import { Loader2 } from 'lucide-react';
 import { ProfileForm } from '@/components/profile/profile-form';
+import { ChangePasswordForm } from '@/components/profile/change-password-form';
+import { Separator } from '@/components/ui/separator';
 
 // Wrapper component to catch and ignore props from AppLayout
 const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
@@ -35,6 +37,11 @@ export default function ProfilePage() {
     error,
   } = useDoc(userProfileRef);
 
+  const canChangePassword = user?.providerData.some(
+    (provider) => provider.providerId === 'password'
+  );
+
+
   if (isUserLoading || !user || isProfileLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -57,8 +64,14 @@ export default function ProfilePage() {
     <AppLayout pageTitle="Profile" itemType="summary" hideControls>
       <ContentWrapper>
         <main className="flex-1 overflow-auto p-4 md:p-6">
-          <div className="mx-auto max-w-2xl">
+          <div className="mx-auto max-w-2xl space-y-8">
             <ProfileForm userProfile={userProfile} />
+            {canChangePassword && (
+              <>
+                <Separator />
+                <ChangePasswordForm />
+              </>
+            )}
           </div>
         </main>
       </ContentWrapper>
