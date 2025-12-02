@@ -182,12 +182,15 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     });
   };
 
-  const handleCopyPassword = () => {
+  const handleCopyAccountDetails = () => {
     if (!item.password) return;
-    navigator.clipboard.writeText(item.password);
+
+    const accountDetails = `HERE IS YOUR ACCOUNT DETAILS\nEMAIL: ${item.username || 'N/A'}\nPASSWORD : ${item.password}\nnote: please dont share to onlyone`;
+    
+    navigator.clipboard.writeText(accountDetails);
     setIsPasswordRevealed(true);
     setIsCopied(true);
-    toast({ title: 'Password Copied' });
+    toast({ title: 'Account details copied' });
 
     setTimeout(() => {
       setIsPasswordRevealed(false);
@@ -422,7 +425,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                         className="z-10 h-7 w-7 shrink-0"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleCopyPassword();
+                          handleCopyAccountDetails();
                         }}
                       >
                         {isCopied ? (
@@ -430,7 +433,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}
-                        <span className="sr-only">Copy Password</span>
+                        <span className="sr-only">Copy account details</span>
                       </Button>
                     </div>
                   )}
