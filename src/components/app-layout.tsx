@@ -107,12 +107,12 @@ function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              isActive={pathname === '/'}
-              tooltip="Dashboard"
+              isActive={pathname === '/rental'}
+              tooltip="Rentals"
             >
-              <Link href="/">
+              <Link href="/rental">
                 <LayoutDashboard />
-                <span>Dashboard</span>
+                <span>Rentals</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -167,7 +167,7 @@ function MobileBottomNav({ itemType }: { itemType: 'master' | 'assigned' }) {
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/rental', label: 'Rentals', icon: LayoutDashboard },
     { href: '/products', label: 'Products', icon: ShoppingBag },
     { href: '/activity-log', label: 'Activity', icon: History },
     { href: '#', label: 'Settings', icon: Settings },

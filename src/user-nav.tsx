@@ -98,9 +98,9 @@ export function UserNav() {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-             <DropdownMenuItem onClick={() => router.push('/')}>
+             <DropdownMenuItem onClick={() => router.push('/rental')}>
               <LayoutDashboard className="mr-2 h-4 w-4" />
-              <span>Dashboard</span>
+              <span>Rentals</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => alert('Profile page coming soon!')}>
               <UserIcon className="mr-2 h-4 w-4" />

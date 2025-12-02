@@ -1,35 +1,21 @@
 'use client';
 
-import React, { Suspense } from 'react';
-import { useUser } from '@/firebase';
-import { KanbanWrapper } from '@/components/kanban/kanban-wrapper';
-import { Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AppLayout } from '@/components/app-layout';
+import { Loader2 } from 'lucide-react';
 
-
-export default function DashboardPage() {
-  const { user, isUserLoading } = useUser();
+// This is now a redirect component.
+// The main content has been moved to /rental/page.tsx
+export default function HomeRedirect() {
   const router = useRouter();
-  
-  if (isUserLoading) {
-      return (
-        <div className="flex min-h-screen w-full items-center justify-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-      );
-  }
 
-  if (!user) {
-    router.replace('/login');
-    return null;
-  }
+  useEffect(() => {
+    router.replace('/rental');
+  }, [router]);
 
   return (
-    <AppLayout pageTitle="Dashboard" itemType="assigned">
-      <Suspense fallback={<div className="flex-1 p-6">Loading...</div>}>
-        <KanbanWrapper user={user} itemType="assigned" />
-      </Suspense>
-    </AppLayout>
+    <div className="flex min-h-screen w-full items-center justify-center">
+      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+    </div>
   );
 }

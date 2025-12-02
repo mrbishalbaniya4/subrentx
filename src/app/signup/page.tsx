@@ -59,7 +59,7 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (!isUserLoading && user) {
-      router.push('/');
+      router.push('/rental');
     }
   }, [user, isUserLoading, router]);
 
@@ -86,7 +86,7 @@ export default function SignupPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="absolute top-6 left-6 flex items-center gap-2">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/rental" className="flex items-center gap-2">
           <VaultboxLogo className="h-8 w-8 text-primary" />
           <h1 className="font-headline text-2xl font-bold text-foreground">
             VaultBox
