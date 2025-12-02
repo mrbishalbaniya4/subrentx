@@ -563,11 +563,6 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
                     <FormControl>
                       <Input type="datetime-local" {...field} />
                     </FormControl>
-                    {masterProductDuration !== null && (
-                      <FormDescription>
-                        Master product is valid for {masterProductDuration} days.
-                      </FormDescription>
-                    )}
                     {masterCountdown && (
                       <FormDescription>
                         Master expires in: {masterCountdown}
