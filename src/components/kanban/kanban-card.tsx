@@ -88,11 +88,6 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const {
     setNodeRef,
@@ -107,7 +102,6 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
       type: 'item',
       item,
     },
-    disabled: !isClient,
   });
 
   const style = {
@@ -285,7 +279,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
           isDragging && 'opacity-50',
           isOverlay && 'shadow-2xl'
         )}
-        {...(isClient ? attributes : {})}
+        {...attributes}
       >
         <CardHeader className="relative flex-row items-start gap-4 space-y-0 p-4 pb-2">
           <div
@@ -303,17 +297,12 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                 </div>
             )}
           </div>
-          {isClient && (
-            <div
-              {...listeners}
-              className={cn(
-                'cursor-grab p-1 text-muted-foreground transition-opacity hover:opacity-80 group-hover:opacity-100 md:opacity-0',
-                !isClient && 'cursor-not-allowed'
-              )}
-            >
-              <GripVertical className="h-5 w-5" />
-            </div>
-          )}
+          <div
+            {...listeners}
+            className="cursor-grab p-1 text-muted-foreground transition-opacity hover:opacity-80 group-hover:opacity-100 md:opacity-0"
+          >
+            <GripVertical className="h-5 w-5" />
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -341,10 +330,10 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent>
-                    {(['Active', 'Expired', 'Archived'] as Status[]).map((status) => (
+                    {(['Active', 'Archived'] as Status[]).map((status) => (
                        <DropdownMenuItem
                         key={status}
-                        disabled={item.status === status || isPending}
+                        disabled={item.status === status || isPending || status === 'Expired'}
                         onClick={() => handleStatusChange(status)}
                       >
                          {status === 'Archived' && item.status === 'Archived' ? (
@@ -498,3 +487,5 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     </>
   );
 }
+
+    

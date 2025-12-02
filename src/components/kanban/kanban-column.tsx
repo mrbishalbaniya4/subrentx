@@ -4,7 +4,7 @@
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { KanbanCard } from './kanban-card';
 import type { Item, Status } from '@/lib/types';
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -17,18 +17,13 @@ interface KanbanColumnProps {
 
 export function KanbanColumn({ id, title, items, isDropDisabled = false }: KanbanColumnProps) {
   const itemIds = useMemo(() => items.map(item => item.id), [items]);
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const { setNodeRef } = useSortable({
     id,
     data: {
       type: 'column',
     },
-    disabled: !isClient || isDropDisabled,
+    disabled: isDropDisabled,
   });
 
   return (
@@ -44,7 +39,7 @@ export function KanbanColumn({ id, title, items, isDropDisabled = false }: Kanba
         )}
       >
         <div className="flex flex-col gap-4">
-          <SortableContext items={itemIds} disabled={!isClient}>
+          <SortableContext items={itemIds}>
             {items.length > 0 ? (
               items.map(item => <KanbanCard key={item.id} item={item} />)
             ) : (
@@ -60,3 +55,5 @@ export function KanbanColumn({ id, title, items, isDropDisabled = false }: Kanba
     </div>
   );
 }
+
+    
