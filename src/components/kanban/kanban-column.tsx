@@ -1,3 +1,4 @@
+
 'use client';
 
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
@@ -11,9 +12,10 @@ interface KanbanColumnProps {
   id: Status;
   title: string;
   items: Item[];
+  isDropDisabled?: boolean;
 }
 
-export function KanbanColumn({ id, title, items }: KanbanColumnProps) {
+export function KanbanColumn({ id, title, items, isDropDisabled = false }: KanbanColumnProps) {
   const itemIds = useMemo(() => items.map(item => item.id), [items]);
   const [isClient, setIsClient] = useState(false);
 
@@ -26,7 +28,7 @@ export function KanbanColumn({ id, title, items }: KanbanColumnProps) {
     data: {
       type: 'column',
     },
-    disabled: !isClient,
+    disabled: !isClient || isDropDisabled,
   });
 
   return (
@@ -37,7 +39,8 @@ export function KanbanColumn({ id, title, items }: KanbanColumnProps) {
       <ScrollArea
         ref={setNodeRef}
         className={cn(
-          'flex-1 rounded-lg border bg-card p-2'
+          'flex-1 rounded-lg border bg-card p-2',
+           isDropDisabled && 'bg-muted/50'
         )}
       >
         <div className="flex flex-col gap-4">
@@ -46,7 +49,9 @@ export function KanbanColumn({ id, title, items }: KanbanColumnProps) {
               items.map(item => <KanbanCard key={item.id} item={item} />)
             ) : (
               <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed">
-                <p className="text-sm text-muted-foreground">Drop items here</p>
+                <p className="text-sm text-muted-foreground">
+                  {isDropDisabled ? 'Auto-managed' : 'Drop items here'}
+                </p>
               </div>
             )}
           </SortableContext>

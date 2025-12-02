@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -84,6 +85,11 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
       } else {
         return currentItems;
       }
+      
+      // Prevent manually dragging into 'Expired' column
+      if (newStatus === 'Expired') {
+        return currentItems;
+      }
   
       // This is the optimistic update.
       // We create a new array with the updated item status.
@@ -137,8 +143,8 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
       }
     }
     
-    // Only persist changes if the status has actually changed.
-    if (targetStatus && initialItem.status !== targetStatus) {
+    // Prevent manual drop into 'Expired' and only persist if status has actually changed.
+    if (targetStatus && targetStatus !== 'Expired' && initialItem.status !== targetStatus) {
       try {
           // Fire-and-forget the update. The real-time listener will handle the UI update.
           updateItemStatus(firestore, user.uid, activeId, targetStatus);
@@ -154,7 +160,7 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
           setItems(initialItems);
       }
     } else {
-      // If no status change, just revert to the server state to ensure consistency.
+      // If no status change or drop is invalid, revert to the server state to ensure consistency.
       setItems(initialItems);
     }
   };
@@ -176,6 +182,7 @@ export function KanbanBoard({ initialItems }: { initialItems: Item[] }) {
               id={column.id}
               title={column.title}
               items={columnItems}
+              isDropDisabled={column.id === 'Expired'}
             />
           );
         })}
