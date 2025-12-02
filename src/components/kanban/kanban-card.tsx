@@ -409,14 +409,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
           )}
           
           <div className="flex flex-wrap items-center gap-2">
-            {item.category && (
-                <Badge variant="outline" className={cn("border", categoryColors[item.category])}>
-                    {item.category}
-                </Badge>
-            )}
-
             {getUrgencyBadge()}
-            {getProfitLossBadge()}
            </div>
 
             <div className="flex items-center gap-1.5 pt-2 text-xs text-muted-foreground">
