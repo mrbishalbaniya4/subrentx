@@ -48,19 +48,33 @@ export function KanbanWrapper({
     return allItems.filter(item => !!item.parentId);
   }, [allItems, itemType]);
 
+  // This effect runs once on mount and periodically to check for expired items.
   useEffect(() => {
-    if (!filteredItems || !firestore || !user) return;
+    const checkAndMoveExpiredItems = () => {
+      if (!filteredItems || !firestore || !user) return;
 
-    const now = new Date();
-    filteredItems.forEach(item => {
-      if (item.endDate && item.status !== 'Expired' && item.status !== 'Archived') {
-        const endDate = new Date(item.endDate);
-        if (isPast(endDate)) {
-          updateItemStatus(firestore, user.uid, item.id, 'Expired');
+      const now = new Date();
+      filteredItems.forEach(item => {
+        // We only care about 'Active' items.
+        if (item.endDate && item.status === 'Active') {
+          const endDate = new Date(item.endDate);
+          if (isPast(endDate)) {
+            // The update is fire-and-forget. The real-time listener will update the UI.
+            updateItemStatus(firestore, user.uid, item.id, 'Expired');
+          }
         }
-      }
-    });
-  }, [filteredItems, firestore, user]);
+      });
+    };
+
+    // Run the check immediately on component load
+    checkAndMoveExpiredItems();
+
+    // And then check every minute.
+    const intervalId = setInterval(checkAndMoveExpiredItems, 60000); // 60 seconds
+
+    // Clean up the interval when the component unmounts
+    return () => clearInterval(intervalId);
+  }, [filteredItems, firestore, user]); // Rerun if the items/user/db change
 
   const processedItems = useMemo(() => {
     if (!filteredItems) return [];
@@ -122,10 +136,7 @@ export function KanbanWrapper({
       case 'grid':
         return <GridView items={activeItems || []} />;
       case 'list':
-        if (itemType === 'master') {
-            return <ProductList items={processedItems || []} />;
-        }
-        return <ListView items={activeItems || []} />;
+          return <ListView items={activeItems || []} />;
       default:
         return <KanbanBoard initialItems={processedItems || []} />;
     }
