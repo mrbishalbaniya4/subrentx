@@ -16,15 +16,14 @@ function SummaryContent({ items }: { items: Item[] }) {
     let totalProfit = 0;
     const masterProducts = items.filter(item => !item.parentId);
     const assignedItems = items.filter(item => !!item.parentId);
-
-    const totalMasters = masterProducts.length;
-    const activeRentals = assignedItems.filter(
-      item => item.status === 'Active'
-    ).length;
     
-    const assignedMasterIds = new Set(assignedItems.map(item => item.parentId));
-    const unassignedMasters = masterProducts.filter(p => !assignedMasterIds.has(p.id)).length;
-
+    const totalMasters = masterProducts.length;
+    
+    const activeAssignedItems = assignedItems.filter(item => item.status === 'Active');
+    const activeRentals = activeAssignedItems.length;
+    
+    const activelyAssignedMasterIds = new Set(activeAssignedItems.map(item => item.parentId));
+    const unassignedMasters = masterProducts.filter(p => !activelyAssignedMasterIds.has(p.id)).length;
 
     items.forEach(item => {
       if (item.parentId && (item.status === 'Expired' || item.status === 'Archived')) {
