@@ -26,15 +26,13 @@ import type { Item } from '@/lib/types';
 import { createItem, editItem } from '@/firebase/firestore/mutations';
 import { suggestDateAction, generatePasswordAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, WandSparkles, RefreshCw, Eye, EyeOff, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Loader2, WandSparkles, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useState, useTransition, useMemo, useEffect } from 'react';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { format, addDays, differenceInDays } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { collection } from 'firebase/firestore';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 
 
 const itemSchema = z.object({
@@ -169,12 +167,13 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
   const isEditingMaster = !!(item && !item.parentId);
   const isMasterProductForm = isCreatingMaster || isEditingMaster;
   
-  const isEditingAssignment = !!(item && item.parentId);
   const isCreatingAssignment = !item && itemType === 'assigned';
   
   const isMasterProductSelection = !parentId || parentId === 'none';
   const finalIsMasterProduct = (isMasterProductForm) || (isCreatingAssignment && isMasterProductSelection);
-  const datesAreDisabled = isEditingAssignment;
+  
+  // This logic was flawed. Now dates are only disabled when editing an EXISTING assignment.
+  const datesAreDisabled = !!(item && item.parentId);
 
 
   const onSubmit = (values: ItemFormValues) => {
@@ -273,131 +272,11 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
     });
   };
 
-  if (isEditingAssignment) {
-    const durationDays = item.startDate && item.endDate ? differenceInDays(new Date(item.endDate), new Date(item.startDate)) : 0;
-    const profit = (item.purchasePrice ?? 0) - (item.masterPrice ?? 0);
-    const isProfit = profit > 0;
-    const isLoss = profit < 0;
-
-    let profitBadgeClass = 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-300';
-    let ProfitIcon = Minus;
-
-    if (isProfit) {
-        profitBadgeClass = 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300';
-        ProfitIcon = TrendingUp;
-    } else if (isLoss) {
-        profitBadgeClass = 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-300';
-        ProfitIcon = TrendingDown;
-    }
-
-    return (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="space-y-4 rounded-lg border bg-card p-4">
-                    <h3 className="text-lg font-medium">Assignment Summary</h3>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                        <div className="text-muted-foreground">Name</div>
-                        <div>{item.name}</div>
-                        <div className="text-muted-foreground">Category</div>
-                        <div>{item.category || 'N/A'}</div>
-                        <div className="text-muted-foreground">Username/Email</div>
-                        <div>{item.username || 'N/A'}</div>
-                        <div className="text-muted-foreground">Duration</div>
-                        <div>{durationDays} days</div>
-                        <div className="text-muted-foreground">Sale Price</div>
-                        <div>${item.purchasePrice?.toFixed(2) ?? '0.00'}</div>
-                        <div className="text-muted-foreground">Profit/Loss</div>
-                        <div>
-                             <Badge variant="outline" className={cn('flex items-center gap-1.5 w-fit', profitBadgeClass)}>
-                                <ProfitIcon className="h-3 w-3" />
-                                <span>${profit.toFixed(2)}</span>
-                            </Badge>
-                        </div>
-                    </div>
-                </div>
-
-                <Separator />
-                
-                <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Editable Details</h3>
-                    <FormField
-                        control={form.control}
-                        name="password"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <div className="relative">
-                                <FormControl>
-                                <Input type={isPasswordVisible ? 'text' : 'password'} placeholder="••••••••" {...field} />
-                                </FormControl>
-                                <div className="absolute right-1 top-1/2 flex -translate-y-1/2">
-                                    <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                        className="h-7 w-7 text-muted-foreground"
-                                        onClick={() => setIsPasswordVisible(prev => !prev)}
-                                        aria-label="Toggle password visibility"
-                                    >
-                                        {isPasswordVisible ? <EyeOff /> : <Eye />}
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                        className="h-7 w-7 text-accent"
-                                        onClick={handleGeneratePassword}
-                                        disabled={isGenerating}
-                                        aria-label="Generate Password"
-                                    >
-                                        {isGenerating ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-                                    </Button>
-                                </div>
-                            </div>
-                            <div className="space-y-1 pt-1">
-                                <Progress value={passwordStrength * 20} className="h-2" />
-                                <p className="text-xs font-medium text-muted-foreground">
-                                    {strengthLabels[passwordStrength]}
-                                </p>
-                            </div>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="notes"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Notes</FormLabel>
-                            <FormControl>
-                                <Textarea placeholder="Add any relevant comments here." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-4">
-                    <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>
-                        Cancel
-                    </Button>
-                    <Button type="submit" disabled={isPending}>
-                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Save Changes
-                    </Button>
-                </div>
-            </form>
-        </Form>
-    )
-  }
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         
-        {itemType === 'assigned' && (
+        {itemType === 'assigned' && !item && ( // Only show assignment section when creating a new assignment
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Assignment</h3>
             <FormField
@@ -475,7 +354,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Netflix Subscription" {...field} disabled={!finalIsMasterProduct} />
+                    <Input placeholder="e.g., Netflix Subscription" {...field} disabled={!finalIsMasterProduct && !!item?.parentId} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -487,7 +366,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={!finalIsMasterProduct}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={!finalIsMasterProduct && !!item?.parentId}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
@@ -520,7 +399,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                   <FormItem>
                     <FormLabel>Username/Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="user@example.com" {...field} disabled={!finalIsMasterProduct }/>
+                      <Input placeholder="user@example.com" {...field} disabled={!finalIsMasterProduct && !!item?.parentId }/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -575,7 +454,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
         <Separator />
 
         <div className="space-y-4">
-          <h3 className="text-lg font-medium">Financials</h3>
+          <h3 className="text-lg font-medium">Financials & Notes</h3>
           <FormField
             control={form.control}
             name="purchasePrice"

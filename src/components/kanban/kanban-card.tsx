@@ -297,77 +297,79 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                 </div>
             )}
           </div>
-          <div
-            {...listeners}
-            className="cursor-grab p-1 text-muted-foreground transition-opacity hover:opacity-80"
-          >
-            <GripVertical className="h-5 w-5" />
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 rounded-full"
+          <div className="flex items-center">
+            <div
+                {...listeners}
+                className="cursor-grab p-1 text-muted-foreground transition-opacity hover:opacity-80"
               >
-                <MoreVertical className="h-4 w-4" />
-                <span className="sr-only">More options</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setIsDialogOpen(true)}>
-                <FilePenLine className="mr-2 h-4 w-4" />
-                <span>Edit</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleDuplicate} disabled={isPending}>
-                <CopyPlus className="mr-2 h-4 w-4" />
-                <span>Duplicate</span>
-              </DropdownMenuItem>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <ArrowRight className="mr-2 h-4 w-4" />
-                  <span>Move to</span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent>
-                    {(['Active', 'Archived'] as Status[]).map((status) => (
-                       <DropdownMenuItem
-                        key={status}
-                        disabled={item.status === status || isPending || status === 'Expired'}
-                        onClick={() => handleStatusChange(status)}
-                      >
-                         {status === 'Archived' && item.status === 'Archived' ? (
-                          <>
-                            <ArchiveRestore className="mr-2 h-4 w-4" />
-                            <span>Unarchive</span>
-                          </>
-                        ) : (
-                          status
-                        )}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-              <DropdownMenuSeparator />
-              {item.status === 'Archived' ? (
-                 <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => setIsDeleteDialogOpen(true)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    <span>Delete Permanently</span>
-                  </DropdownMenuItem>
-              ) : (
-                 <DropdownMenuItem
-                    onClick={() => setIsArchiveDialogOpen(true)}
-                  >
-                    <Archive className="mr-2 h-4 w-4" />
-                    <span>Archive</span>
-                  </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <GripVertical className="h-5 w-5" />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-full"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                  <span className="sr-only">More options</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setIsDialogOpen(true)}>
+                  <FilePenLine className="mr-2 h-4 w-4" />
+                  <span>Edit</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDuplicate} disabled={isPending}>
+                  <CopyPlus className="mr-2 h-4 w-4" />
+                  <span>Duplicate</span>
+                </DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <ArrowRight className="mr-2 h-4 w-4" />
+                    <span>Move to</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      {(['Active', 'Archived'] as Status[]).map((status) => (
+                         <DropdownMenuItem
+                          key={status}
+                          disabled={item.status === status || isPending || status === 'Expired'}
+                          onClick={() => handleStatusChange(status)}
+                        >
+                           {status === 'Archived' && item.status === 'Archived' ? (
+                            <>
+                              <ArchiveRestore className="mr-2 h-4 w-4" />
+                              <span>Unarchive</span>
+                            </>
+                          ) : (
+                            status
+                          )}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+                <DropdownMenuSeparator />
+                {item.status === 'Archived' ? (
+                   <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      <span>Delete Permanently</span>
+                    </DropdownMenuItem>
+                ) : (
+                   <DropdownMenuItem
+                      onClick={() => setIsArchiveDialogOpen(true)}
+                    >
+                      <Archive className="mr-2 h-4 w-4" />
+                      <span>Archive</span>
+                    </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </CardHeader>
         <CardContent
           className="space-y-3 p-4 pt-0"
