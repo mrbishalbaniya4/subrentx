@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Header } from '@/components/header';
 import { KanbanBoard } from '@/components/kanban/kanban-board';
 import { GridView } from '@/components/grid-view/grid-view';
 import { ListView } from '@/components/list-view/list-view';
@@ -16,20 +15,36 @@ import { ProductList } from '@/components/products/product-list';
 interface KanbanWrapperProps {
     user: User;
     itemType: 'master' | 'assigned';
+    searchQuery?: string;
+    filterCategory?: FilterCategory;
+    filterUrgency?: FilterUrgency;
+    sortBy?: SortByType;
+    viewMode?: ViewMode;
 }
 
-export function KanbanWrapper({ user, itemType }: KanbanWrapperProps) {
+export function KanbanWrapper({ 
+    user, 
+    itemType,
+    searchQuery = '',
+    filterCategory = 'all',
+    filterUrgency = 'all',
+    sortBy = 'createdAt',
+    viewMode: initialViewMode = 'kanban'
+}: KanbanWrapperProps) {
   const firestore = useFirestore();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
-  const [filterUrgency, setFilterUrgency] = useState<FilterUrgency>('all');
-  const [sortBy, setSortBy] = useState<SortByType>('createdAt');
-  const [viewMode, setViewMode] = useState<ViewMode>(itemType === 'master' ? 'list' : 'kanban');
-  const [isClient, setIsClient] = useState(false);
-
+  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
+  
+  // Set default view mode based on itemType
   useEffect(() => {
-    setIsClient(true);
-  }, []);
+    setViewMode(itemType === 'master' ? 'list' : 'kanban');
+  }, [itemType]);
+  
+  useEffect(() => {
+    if(initialViewMode) {
+      setViewMode(initialViewMode);
+    }
+  }, [initialViewMode]);
+
 
   const itemsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -137,24 +152,8 @@ export function KanbanWrapper({ user, itemType }: KanbanWrapperProps) {
   };
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background">
-      <Header 
-        searchQuery={searchQuery} 
-        onSearchChange={setSearchQuery} 
-        filterCategory={filterCategory}
-        onFilterCategoryChange={setFilterCategory}
-        filterUrgency={filterUrgency}
-        onFilterUrgencyChange={setFilterUrgency}
-        sortBy={sortBy}
-        onSortByChange={setSortBy}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        isClient={isClient}
-        itemType={itemType}
-      />
       <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
         {renderView()}
       </main>
-    </div>
   );
 }

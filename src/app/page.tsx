@@ -5,6 +5,7 @@ import { useUser } from '@/firebase';
 import { KanbanWrapper } from '@/components/kanban/kanban-wrapper';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { AppLayout } from '@/components/app-layout';
 
 
 export default function DashboardPage() {
@@ -25,8 +26,10 @@ export default function DashboardPage() {
   }
 
   return (
+    <AppLayout pageTitle="Dashboard" itemType="assigned">
       <Suspense fallback={<div className="flex-1 p-6">Loading...</div>}>
         <KanbanWrapper user={user} itemType="assigned" />
       </Suspense>
+    </AppLayout>
   );
 }

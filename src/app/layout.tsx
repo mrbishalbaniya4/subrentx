@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 import { FirebaseClientProvider } from '@/firebase';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 export const metadata: Metadata = {
   title: 'VaultBox',
@@ -27,17 +28,19 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <div className="relative flex min-h-screen w-full flex-col">
-              {children}
-            </div>
-            <Toaster />
-          </ThemeProvider>
+          <SidebarProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <div className="relative flex min-h-screen w-full flex-col">
+                {children}
+              </div>
+              <Toaster />
+            </ThemeProvider>
+          </SidebarProvider>
         </FirebaseClientProvider>
       </body>
     </html>
