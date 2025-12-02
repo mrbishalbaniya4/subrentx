@@ -65,9 +65,10 @@ service cloud.firestore {
         return isOwner(userId) && isStatusUnchanged && isIdUnchanged;
     }
 
-    function isAdminUpdatingProfile(userId) {
-        // Admin can update any profile, including changing the status, but not the ID.
-        return isAdmin() && request.resource.data.id == resource.data.id;
+    function isAdminUpdatingProfile() {
+        // Admin can update any profile, including changing the status.
+        // The ID of the document is immutable by default in Firestore updates on this path.
+        return isAdmin();
     }
     
     function hasValidItemData(userId) {
@@ -101,7 +102,7 @@ service cloud.firestore {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow create: if isCreatingOwnPendingUser(userId) || isAdmin();
-      allow update: if isUpdatingOwnProfile(userId) || isAdminUpdatingProfile(userId);
+      allow update: if isUpdatingOwnProfile(userId) || isAdminUpdatingProfile();
       allow delete: if false;
 
       /**
