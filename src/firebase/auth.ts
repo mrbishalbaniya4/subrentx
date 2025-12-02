@@ -27,12 +27,16 @@ const createUserProfile = async (userCredential: UserCredential) => {
   
   const googleId = user.providerData.find(p => p.providerId === 'google.com')?.uid;
 
+  // Check if the user is the admin and set status accordingly.
+  const isAdmin = user.email === 'mrbishalbaniya4@gmail.com';
+  const userStatus = isAdmin ? 'active' : 'pending';
+
   const userData: any = {
     id: user.uid,
     email: user.email,
     firstName: user.displayName?.split(' ')[0] || '',
     lastName: user.displayName?.split(' ')[1] || '',
-    status: 'pending', // Set default status to 'pending'
+    status: userStatus,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
