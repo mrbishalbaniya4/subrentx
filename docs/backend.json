@@ -101,7 +101,7 @@
         "category": {
           "type": "string",
           "description": "Category of the item.",
-          "enum": ["Work", "Personal", "Finance", "Shopping", "Social", "Travel", "Other"]
+          "enum": ["Apeuni", "Netflix", "Amazon", "Spotify", "Hulu", "Other"]
         },
         "contactName": {
             "type": "string",

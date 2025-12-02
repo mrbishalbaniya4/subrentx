@@ -45,7 +45,7 @@ const itemSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   status: z.enum(['Active', 'Expired', 'Archived']),
-  category: z.enum(['Work', 'Personal', 'Finance', 'Shopping', 'Social', 'Travel', 'Other']).optional(),
+  category: z.enum(['Apeuni', 'Netflix', 'Amazon', 'Spotify', 'Hulu', 'Other']).optional(),
   contactName: z.string().optional(),
   contactValue: z.string().optional(),
   purchasePrice: z.coerce.number().optional(),
@@ -123,16 +123,9 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
   const availableMasterProducts = useMemo(() => {
     if (!allItems) return [];
     
-    // Find all master products that are themselves active and not expired.
-    const activeMasters = allItems.filter(p => 
-        !p.parentId && 
-        p.status === 'Active' && 
-        p.endDate && !isPast(new Date(p.endDate))
-    );
-
     // Find all assignments that are still active (not expired).
     const activeAssignments = allItems.filter(a => 
-      a.parentId && a.endDate && !isPast(new Date(a.endDate))
+      a.parentId && a.status === 'Active' && a.endDate && !isPast(new Date(a.endDate))
     );
 
     // Get the IDs of the master products that are tied to active assignments.
@@ -140,8 +133,11 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
 
     // A master product is available if it's active AND it's not in the set of actively assigned masters.
     // If we are editing an existing item, we should also include its own master product in the list.
-    return activeMasters.filter(p => 
-      !assignedMasterIds.has(p.id) || (item && p.id === item.parentId)
+    return allItems.filter(p => 
+        !p.parentId && 
+        p.status === 'Active' && 
+        p.endDate && !isPast(new Date(p.endDate)) &&
+        (!assignedMasterIds.has(p.id) || (item && p.id === item.parentId))
     );
   }, [allItems, item]);
 
@@ -169,7 +165,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
           startDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
           endDate: '',
           status: 'Active',
-          category: 'Personal',
+          category: 'Other',
           contactName: '',
           contactValue: '',
           purchasePrice: 0,
@@ -461,12 +457,11 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Work">Work</SelectItem>
-                      <SelectItem value="Personal">Personal</SelectItem>
-                      <SelectItem value="Finance">Finance</SelectItem>
-                      <SelectItem value="Shopping">Shopping</SelectItem>
-                      <SelectItem value="Social">Social</SelectItem>
-                      <SelectItem value="Travel">Travel</SelectItem>
+                      <SelectItem value="Apeuni">Apeuni</SelectItem>
+                      <SelectItem value="Netflix">Netflix</SelectItem>
+                      <SelectItem value="Amazon">Amazon</SelectItem>
+                      <SelectItem value="Spotify">Spotify</SelectItem>
+                      <SelectItem value="Hulu">Hulu</SelectItem>
                       <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>

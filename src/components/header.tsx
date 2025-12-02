@@ -79,12 +79,11 @@ export function Header({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Categories</SelectItem>
-                        <SelectItem value="Work">Work</SelectItem>
-                        <SelectItem value="Personal">Personal</SelectItem>
-                        <SelectItem value="Finance">Finance</SelectItem>
-                        <SelectItem value="Shopping">Shopping</SelectItem>
-                        <SelectItem value="Social">Social</SelectItem>
-                        <SelectItem value="Travel">Travel</SelectItem>
+                        <SelectItem value="Apeuni">Apeuni</SelectItem>
+                        <SelectItem value="Netflix">Netflix</SelectItem>
+                        <SelectItem value="Amazon">Amazon</SelectItem>
+                        <SelectItem value="Spotify">Spotify</SelectItem>
+                        <SelectItem value="Hulu">Hulu</SelectItem>
                         <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
