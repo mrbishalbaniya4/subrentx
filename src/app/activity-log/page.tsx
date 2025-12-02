@@ -9,6 +9,14 @@ import { ActivityLogList } from '@/components/activity-log/activity-log-list';
 import type { ActivityLog } from '@/lib/types';
 import { AppLayout } from '@/components/app-layout';
 
+function ActivityLogContent({ logs }: { logs: ActivityLog[] }) {
+  return (
+    <main className="flex-1 overflow-auto p-4 md:p-6">
+      <ActivityLogList logs={logs} />
+    </main>
+  );
+}
+
 
 export default function ActivityLogPage() {
   const { user, isUserLoading } = useUser();
@@ -40,9 +48,7 @@ export default function ActivityLogPage() {
 
   return (
     <AppLayout pageTitle="Activity Log" itemType="assigned" hideControls>
-       <main className="flex-1 overflow-auto p-4 md:p-6">
-        <ActivityLogList logs={activityLogs || []} />
-      </main>
+       <ActivityLogContent logs={activityLogs || []} />
     </AppLayout>
   );
 }
