@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { KanbanBoard } from '@/components/kanban/kanban-board';
 import { GridView } from '@/components/grid-view/grid-view';
 import { ListView } from '@/components/list-view/list-view';
@@ -42,10 +42,24 @@ export function KanbanWrapper({
 
   const filteredItems = useMemo(() => {
     if (!allItems) return [];
+
+    let itemsToFilter = [];
     if (itemType === 'master') {
-      return allItems.filter(item => !item.parentId);
+      itemsToFilter = allItems.filter(item => !item.parentId);
+    } else {
+      itemsToFilter = allItems.filter(item => !!item.parentId);
     }
-    return allItems.filter(item => !!item.parentId);
+    return itemsToFilter.map(item => {
+        if (item.parentId) {
+            const master = allItems.find(p => p.id === item.parentId);
+            return {
+                ...item,
+                masterPrice: master?.purchasePrice || 0,
+            }
+        }
+        return item;
+    });
+
   }, [allItems, itemType]);
 
   // This effect runs once on mount and periodically to check for expired items.
@@ -53,28 +67,20 @@ export function KanbanWrapper({
     const checkAndMoveExpiredItems = () => {
       if (!filteredItems || !firestore || !user) return;
 
-      const now = new Date();
       filteredItems.forEach(item => {
-        // We only care about 'Active' items.
         if (item.endDate && item.status === 'Active') {
-          const endDate = new Date(item.endDate);
-          if (isPast(endDate)) {
-            // The update is fire-and-forget. The real-time listener will update the UI.
+          if (isPast(new Date(item.endDate))) {
             updateItemStatus(firestore, user.uid, item.id, 'Expired');
           }
         }
       });
     };
-
-    // Run the check immediately on component load
+    
     checkAndMoveExpiredItems();
+    const intervalId = setInterval(checkAndMoveExpiredItems, 60000); 
 
-    // And then check every minute.
-    const intervalId = setInterval(checkAndMoveExpiredItems, 60000); // 60 seconds
-
-    // Clean up the interval when the component unmounts
     return () => clearInterval(intervalId);
-  }, [filteredItems, firestore, user]); // Rerun if the items/user/db change
+  }, [filteredItems, firestore, user]);
 
   const processedItems = useMemo(() => {
     if (!filteredItems) return [];
@@ -130,6 +136,10 @@ export function KanbanWrapper({
   const renderView = () => {
     const activeItems = processedItems.filter(item => item.status !== 'Archived');
     
+    if (itemType === 'master') {
+      return <ProductList items={activeItems} />;
+    }
+
     switch (viewMode) {
       case 'kanban':
         return <KanbanBoard initialItems={processedItems || []} />;

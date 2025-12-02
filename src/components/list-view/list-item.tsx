@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Item, Category, Status } from '@/lib/types';
@@ -49,6 +48,10 @@ import {
   Archive,
   ArrowRight,
   ArchiveRestore,
+  User,
+  TrendingUp,
+  TrendingDown,
+  Minus,
 } from 'lucide-react';
 import { archiveItem, duplicateItem, updateItemStatus, deleteItem } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
@@ -189,12 +192,51 @@ export function ListItem({ item }: ListItemProps) {
     return { text: distanceText, className: 'text-green-600 dark:text-green-500' };
   };
 
+  const getProfitLossInfo = () => {
+    if (typeof item.masterPrice !== 'number' || typeof item.purchasePrice !== 'number') {
+      return { text: 'N/A', className: '' };
+    }
+  
+    const profit = item.purchasePrice - item.masterPrice;
+    const isProfit = profit > 0;
+    const isLoss = profit < 0;
+    
+    let className = 'text-gray-600 dark:text-gray-400';
+    let Icon = Minus;
+
+    if (isProfit) {
+        className = 'text-green-600 dark:text-green-500';
+        Icon = TrendingUp;
+    } else if (isLoss) {
+        className = 'text-red-600 dark:text-red-500';
+        Icon = TrendingDown;
+    }
+    
+    return {
+      text: `$${profit.toFixed(2)}`,
+      className,
+      Icon
+    };
+  }
+
   const urgency = getUrgencyInfo();
+  const profitLoss = getProfitLossInfo();
+  const itemType = item.parentId ? 'assigned' : 'master';
 
   return (
     <>
       <TableRow>
-        <TableCell className="font-medium">{item.name}</TableCell>
+        <TableCell className="font-medium">
+          <div className="flex flex-col">
+            <span>{item.name}</span>
+            {item.contactName && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <User className="h-3 w-3" />
+                <span>{item.contactName}</span>
+              </div>
+            )}
+          </div>
+        </TableCell>
         <TableCell>
           {item.category && (
             <Badge variant="outline" className={cn("border", categoryColors[item.category])}>
@@ -209,6 +251,12 @@ export function ListItem({ item }: ListItemProps) {
         </TableCell>
         <TableCell className={cn(urgency.className)}>
             {urgency.text}
+        </TableCell>
+         <TableCell className={cn("font-medium", profitLoss.className)}>
+            <div className="flex items-center gap-1.5">
+              <profitLoss.Icon className="h-4 w-4" />
+              <span>{profitLoss.text}</span>
+            </div>
         </TableCell>
         <TableCell className="text-muted-foreground">{lastUpdated}</TableCell>
         <TableCell className="text-right">
@@ -239,7 +287,7 @@ export function ListItem({ item }: ListItemProps) {
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent>
-                     {(['Active', 'Expired', 'Archived'] as Status[]).map((status) => (
+                     {(['Active', 'Archived'] as Status[]).map((status) => (
                        <DropdownMenuItem
                         key={status}
                         disabled={item.status === status || isPending}
@@ -288,7 +336,7 @@ export function ListItem({ item }: ListItemProps) {
               Update the details below. Click save when you're done.
             </DialogDescription>
           </DialogHeader>
-          <ItemForm item={item} setDialogOpen={setIsDialogOpen} />
+          <ItemForm item={item} setDialogOpen={setIsDialogOpen} itemType={itemType} />
         </DialogContent>
       </Dialog>
 

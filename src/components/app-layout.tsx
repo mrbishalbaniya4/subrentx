@@ -51,19 +51,21 @@ export function AppLayout({
   itemType: 'master' | 'assigned';
   hideControls?: boolean;
 }) {
-  const { user } = useUser();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
   const [filterUrgency, setFilterUrgency] = useState<FilterUrgency>('all');
   const [sortBy, setSortBy] = useState<SortByType>('createdAt');
-  const [viewMode, setViewMode] = useState<ViewMode>('kanban');
+  const [viewMode, setViewMode] = useState<ViewMode>(itemType === 'master' ? 'list' : 'kanban');
   const [isClient, setIsClient] = useState(false);
   const isMobile = useIsMobile();
 
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    if (itemType === 'master') {
+      setViewMode('list');
+    }
+  }, [itemType]);
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
