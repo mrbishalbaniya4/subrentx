@@ -39,34 +39,28 @@ export function KanbanWrapper({
 
   const { data: allItems } = useCollection<Item>(itemsQuery);
 
-  const filteredItems = useMemo(() => {
+  const itemsForCurrentView = useMemo(() => {
     if (!allItems) return [];
-
-    let itemsToFilter = [];
     if (itemType === 'master') {
-      itemsToFilter = allItems.filter(item => !item.parentId);
+      return allItems.filter(item => !item.parentId);
     } else {
-      itemsToFilter = allItems.filter(item => !!item.parentId);
+      // For assigned items, augment with masterPrice for profit calculation
+      return allItems.filter(item => !!item.parentId).map(item => {
+        const master = allItems.find(p => p.id === item.parentId);
+        return {
+          ...item,
+          masterPrice: master?.purchasePrice || 0,
+        };
+      });
     }
-    return itemsToFilter.map(item => {
-        if (item.parentId) {
-            const master = allItems.find(p => p.id === item.parentId);
-            return {
-                ...item,
-                masterPrice: master?.purchasePrice || 0,
-            }
-        }
-        return item;
-    });
-
   }, [allItems, itemType]);
 
   // This effect runs once on mount and periodically to check for expired items.
   useEffect(() => {
     const checkAndMoveExpiredItems = () => {
-      if (!filteredItems || !firestore || !user) return;
+      if (!itemsForCurrentView || !firestore || !user) return;
 
-      filteredItems.forEach(item => {
+      itemsForCurrentView.forEach(item => {
         if (item.endDate && item.status === 'Active') {
           if (isPast(new Date(item.endDate))) {
             updateItemStatus(firestore, user.uid, item.id, 'Expired');
@@ -75,16 +69,16 @@ export function KanbanWrapper({
       });
     };
     
-    checkAndMoveExpiredItems();
-    const intervalId = setInterval(checkAndMoveExpiredItems, 60000); 
+    checkAndMoveExpiredItems(); // Run on initial load
+    const intervalId = setInterval(checkAndMoveExpiredItems, 60000); // Check every minute
 
-    return () => clearInterval(intervalId);
-  }, [filteredItems, firestore, user]);
+    return () => clearInterval(intervalId); // Cleanup on unmount
+  }, [itemsForCurrentView, firestore, user]);
 
   const processedItems = useMemo(() => {
-    if (!filteredItems) return [];
+    if (!itemsForCurrentView) return [];
     
-    let items = [...filteredItems];
+    let items = [...itemsForCurrentView];
 
     if (searchQuery) {
       const lowercasedQuery = searchQuery.toLowerCase();
@@ -130,7 +124,7 @@ export function KanbanWrapper({
     }
 
     return items;
-  }, [filteredItems, searchQuery, filterCategory, filterUrgency, sortBy]);
+  }, [itemsForCurrentView, searchQuery, filterCategory, filterUrgency, sortBy]);
   
   const renderView = () => {
     const activeItems = processedItems.filter(item => item.status !== 'Archived');

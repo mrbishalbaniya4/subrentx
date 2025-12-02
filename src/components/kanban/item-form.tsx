@@ -29,7 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, WandSparkles, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useState, useTransition, useMemo, useEffect } from 'react';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { format, addDays, differenceInDays } from 'date-fns';
+import { format, addDays, differenceInDays, isWithinInterval, parseISO } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { collection } from 'firebase/firestore';
@@ -56,7 +56,7 @@ type ItemFormValues = z.infer<typeof itemSchema>;
 interface ItemFormProps {
   item?: Item;
   setDialogOpen: (open: boolean) => void;
-  itemType?: 'master' | 'assigned';
+  itemType: 'master' | 'assigned';
 }
 
 const getPasswordStrength = (password: string) => {
@@ -80,7 +80,7 @@ const strengthLabels = [
     'Strong',
 ];
 
-export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFormProps) {
+export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -99,29 +99,15 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
 
   const availableMasterProducts = useMemo(() => {
     if (!allItems) return [];
-    const masterProducts = allItems.filter(item => !item.parentId);
-    const activeAssignmentParentIds = new Set(
-      allItems
-        .filter(i => i.parentId && i.status === 'Active')
-        .map(i => i.parentId)
-    );
-
-    const currentItemParentId = item?.parentId;
-
-    return masterProducts.filter(p => {
-        if (p.id === currentItemParentId) {
-            return true;
-        }
-        return !activeAssignmentParentIds.has(p.id);
-    });
-  }, [allItems, item]);
+    return allItems.filter(item => !item.parentId && item.status === 'Active');
+  }, [allItems]);
 
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
     defaultValues: item
       ? {
           ...item,
-          parentId: item.parentId || 'none',
+          parentId: item.parentId || null,
           startDate: item.startDate
             ? format(new Date(item.startDate), "yyyy-MM-dd'T'HH:mm")
             : '',
@@ -131,12 +117,12 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
         }
       : {
           name: '',
-          parentId: 'none',
+          parentId: null,
           username: '',
           password: '',
           pin: '',
           notes: '',
-          startDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+          startDate: format(new Date(), "yyyy-MM-dd'T'HHmm"),
           endDate: '',
           status: 'Active',
           category: 'Personal',
@@ -148,49 +134,56 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
   
   const parentId = form.watch('parentId');
 
+  // Effect to auto-fill form when a master product is selected for a new assignment
   useEffect(() => {
-    if (parentId && parentId !== 'none' && !item) {
+    if (itemType === 'assigned' && !item && parentId) { // Creating new assignment
         const selectedMaster = availableMasterProducts.find(p => p.id === parentId);
         if (selectedMaster) {
             form.setValue('name', selectedMaster.name);
             form.setValue('username', selectedMaster.username);
             form.setValue('password', selectedMaster.password || ''); 
-            form.setValue('notes', '');
             form.setValue('category', selectedMaster.category);
+            form.setValue('purchasePrice', selectedMaster.purchasePrice); // Inherit price
         }
     }
-  }, [parentId, availableMasterProducts, form, item]);
+  }, [parentId, availableMasterProducts, form, item, itemType]);
 
   const password = form.watch('password') || '';
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
   
-  const isCreatingMaster = itemType === 'master' && !item;
-  const isEditingMaster = !!(item && !item.parentId);
-  const isMasterProductForm = isCreatingMaster || isEditingMaster;
+  // Is this form for a master product? (creating a new one or editing an existing one)
+  const isMasterProductForm = itemType === 'master' || (item && !item.parentId);
   
-  const isCreatingAssignment = !item && itemType === 'assigned';
-  
-  const isMasterProductSelection = !parentId || parentId === 'none';
-  const finalIsMasterProduct = (isMasterProductForm) || (isCreatingAssignment && isMasterProductSelection);
-  
-  const datesAreDisabled = !!(item?.parentId && item?.endDate && item?.startDate);
-
+  // Are we creating a new assignment?
+  const isCreatingAssignment = itemType === 'assigned' && !item;
 
   const onSubmit = (values: ItemFormValues) => {
     if (!user || !firestore) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'You must be logged in to save items.',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
       return;
+    }
+
+    // Date validation for sub-products
+    if (values.parentId) {
+      const master = availableMasterProducts.find(p => p.id === values.parentId);
+      if (master && master.startDate && master.endDate && values.startDate && values.endDate) {
+        const masterStart = parseISO(master.startDate);
+        const masterEnd = parseISO(master.endDate);
+        const subStart = parseISO(values.startDate);
+        const subEnd = parseISO(values.endDate);
+
+        if (!isWithinInterval(subStart, { start: masterStart, end: masterEnd }) || !isWithinInterval(subEnd, { start: masterStart, end: masterEnd })) {
+          form.setError('endDate', { message: 'Assignment date range must be within the master product\'s duration.' });
+          return;
+        }
+      }
     }
 
     startTransition(async () => {
       try {
         const itemData: Partial<Item> = {
             ...values,
-            parentId: values.parentId === 'none' ? null : values.parentId,
+            parentId: isMasterProductForm ? null : values.parentId,
             startDate: values.startDate ? new Date(values.startDate).toISOString() : '',
             endDate: values.endDate ? new Date(values.endDate).toISOString() : '',
         };
@@ -203,8 +196,8 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
           await editItem(firestore, user.uid, { ...item, ...itemData });
           toast({ title: 'Success', description: 'Item updated successfully.' });
         } else {
-          await createItem(firestore, user.uid, itemData as Item, availableMasterProducts);
-          toast({ title: 'Success', description: 'Item added successfully.' });
+          await createItem(firestore, user.uid, itemData as Item, allItems || []);
+          toast({ title: 'Success', description: `${isMasterProductForm ? 'Master product' : 'Assigned item'} added successfully.` });
         }
         setDialogOpen(false);
       } catch (error) {
@@ -212,7 +205,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
         toast({
           variant: 'destructive',
           title: 'Error Saving Item',
-          description: 'Failed to save item. Please check permissions and try again.',
+          description: (error as Error).message || 'An unexpected error occurred.',
         });
       }
     });
@@ -282,23 +275,22 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         
-        {itemType === 'assigned' && !item && ( // Only show assignment section when creating a new assignment
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Assignment</h3>
+        {isCreatingAssignment && ( // Only show when creating a new assignment
+          <div className="space-y-4 rounded-lg border bg-card p-4">
+            <h3 className="text-lg font-medium">Assignment Setup</h3>
             <FormField
               control={form.control}
               name="parentId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Assign from Master Product</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || 'none'}>
+                  <Select onValueChange={field.onChange} value={field.value || ''}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a master product to assign..." />
+                        <SelectValue placeholder="Select a master product..." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="none">None (Create a one-off item)</SelectItem>
                       {availableMasterProducts.map(p => {
                           const remainingDays = p.endDate ? differenceInDays(new Date(p.endDate), new Date()) : null;
                           const daysText = remainingDays !== null 
@@ -312,11 +304,12 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                       })}
                     </SelectContent>
                   </Select>
+                  <FormDescription>Select the master product this item belongs to.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            {!isMasterProductSelection && (
+            {parentId && (
               <>
                   <FormField
                     control={form.control}
@@ -350,9 +343,8 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
           </div>
         )}
 
-
         <div className="space-y-4">
-             <h3 className="text-lg font-medium">{finalIsMasterProduct ? "Product Details" : "Assignment Details"}</h3>
+             <h3 className="text-lg font-medium">{isMasterProductForm ? "Master Product Details" : "Item Details"}</h3>
             <FormField
               control={form.control}
               name="name"
@@ -360,7 +352,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Netflix Subscription" {...field} disabled={!finalIsMasterProduct && !!item?.parentId} />
+                    <Input placeholder="e.g., Netflix Subscription" {...field} disabled={!!parentId && !isMasterProductForm} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -372,7 +364,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={!finalIsMasterProduct && !!item?.parentId}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={!!parentId && !isMasterProductForm}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
@@ -405,7 +397,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                   <FormItem>
                     <FormLabel>Username/Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="user@example.com" {...field} disabled={!finalIsMasterProduct && !!item?.parentId }/>
+                      <Input placeholder="user@example.com" {...field} disabled={!!parentId && !isMasterProductForm }/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -430,25 +422,10 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                           />
                         </FormControl>
                         <div className="absolute right-1 top-1/2 flex -translate-y-1/2">
-                            <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                className="h-7 w-7 text-muted-foreground"
-                                onClick={() => setIsPasswordVisible(prev => !prev)}
-                                aria-label="Toggle password visibility"
-                            >
+                            <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground" onClick={() => setIsPasswordVisible(prev => !prev)} aria-label="Toggle password visibility">
                                 {isPasswordVisible ? <EyeOff /> : <Eye />}
                             </Button>
-                             <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                className="h-7 w-7 text-accent"
-                                onClick={handleGeneratePassword}
-                                disabled={isGenerating}
-                                aria-label="Generate Password"
-                            >
+                             <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-accent" onClick={handleGeneratePassword} disabled={isGenerating} aria-label="Generate Password">
                                 {isGenerating ? <Loader2 className="animate-spin" /> : <RefreshCw />}
                             </Button>
                         </div>
@@ -479,12 +456,12 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
             name="purchasePrice"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{finalIsMasterProduct ? "Default Price" : "Sale Price"}</FormLabel>
+                <FormLabel>{isMasterProductForm ? "Default Price" : "Sale Price"}</FormLabel>
                 <FormControl>
                   <Input type="number" placeholder="0.00" {...field} />
                 </FormControl>
                  <FormDescription>
-                    {finalIsMasterProduct ? "The default price for this master product." : "The price for this specific assignment."}
+                    {isMasterProductForm ? "The default cost for this master product." : "The price for this specific assignment."}
                  </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -498,7 +475,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                   <FormLabel>Notes</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder={finalIsMasterProduct ? "Add notes for this master product..." : "Add notes for this assignment..."}
+                      placeholder={isMasterProductForm ? "Add notes for this master product..." : "Add notes for this assignment..."}
                       {...field}
                     />
                   </FormControl>
@@ -520,7 +497,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                   <FormItem>
                     <FormLabel>Start Date</FormLabel>
                     <FormControl>
-                      <Input type="datetime-local" {...field} disabled={datesAreDisabled} />
+                      <Input type="datetime-local" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -534,40 +511,20 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
                     <FormLabel>End Date</FormLabel>
                     <div className="relative">
                       <FormControl>
-                        <Input type="datetime-local" {...field} disabled={datesAreDisabled} />
+                        <Input type="datetime-local" {...field} />
                       </FormControl>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-accent"
-                        onClick={handleSuggestDate}
-                        disabled={isSuggesting || datesAreDisabled}
-                        aria-label="Suggest End Date"
-                      >
-                        {isSuggesting ? (
-                          <Loader2 className="animate-spin" />
-                        ) : (
-                          <WandSparkles />
-                        )}
+                      <Button type="button" size="icon" variant="ghost" className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-accent" onClick={handleSuggestDate} disabled={isSuggesting}>
+                        {isSuggesting ? <Loader2 className="animate-spin" /> : <WandSparkles />}
                       </Button>
                     </div>
-                    <FormMessage />
                      <div className="flex flex-wrap gap-2 pt-2">
                       {[3, 5, 7, 10, 15, 20, 30, 90].map((days) => (
-                        <Button
-                          key={days}
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setEndDateInDays(days)}
-                          className="text-xs"
-                          disabled={datesAreDisabled}
-                        >
+                        <Button key={days} type="button" variant="outline" size="sm" onClick={() => setEndDateInDays(days)} className="text-xs">
                           {days}d
                         </Button>
                       ))}
                     </div>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -580,7 +537,7 @@ export function ItemForm({ item, setDialogOpen, itemType = 'assigned' }: ItemFor
             </Button>
             <Button type="submit" disabled={isPending}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {item ? 'Save Changes' : (finalIsMasterProduct ? 'Save Master Product' : 'Save Assignment')}
+                {item ? 'Save Changes' : (isMasterProductForm ? 'Save Master Product' : 'Save Assignment')}
             </Button>
         </div>
       </form>
