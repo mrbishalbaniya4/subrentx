@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import {
   Sidebar,
   SidebarContent,
@@ -26,7 +27,6 @@ import {
 } from 'lucide-react';
 import { Header } from '@/components/header';
 import { useUser } from '@/firebase';
-import { useState, useEffect } from 'react';
 import type {
   FilterCategory,
   FilterUrgency,
