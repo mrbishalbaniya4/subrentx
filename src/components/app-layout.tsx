@@ -24,6 +24,7 @@ import {
   Settings,
   LayoutDashboard,
   Users,
+  Plus,
 } from 'lucide-react';
 import { Header } from '@/components/header';
 import { useUser } from '@/firebase';
@@ -34,6 +35,10 @@ import type {
   ViewMode,
 } from '@/lib/types';
 import { usePathname } from 'next/navigation';
+import { AddItemButton } from './kanban/add-item-button';
+import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
+
 
 export function AppLayout({
   children,
@@ -55,6 +60,8 @@ export function AppLayout({
     itemType === 'master' ? 'list' : 'kanban'
   );
   const [isClient, setIsClient] = useState(false);
+  const isMobile = useIsMobile();
+
 
   useEffect(() => {
     setIsClient(true);
@@ -88,6 +95,7 @@ export function AppLayout({
           viewMode,
         })}
       </div>
+      {isMobile && <MobileBottomNav itemType={itemType} />}
     </div>
   );
 }
@@ -154,5 +162,61 @@ function AppSidebar() {
         </SidebarMenu>
       </nav>
     </aside>
+  );
+}
+
+
+function MobileBottomNav({ itemType }: { itemType: 'master' | 'assigned' }) {
+  const pathname = usePathname();
+
+  const navItems = [
+    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/products', label: 'Products', icon: ShoppingBag },
+    { href: '/activity-log', label: 'Activity', icon: History },
+    { href: '#', label: 'Settings', icon: Settings },
+  ];
+
+  return (
+    <div className="fixed bottom-0 left-0 z-50 w-full border-t bg-background/95 backdrop-blur-sm sm:hidden">
+      <div className="relative mx-auto grid h-16 max-w-lg grid-cols-5 items-center px-2">
+        {navItems.slice(0, 2).map((item, index) => (
+          <Link
+            key={index}
+            href={item.href}
+            className={cn(
+              'group flex flex-col items-center justify-center gap-1 rounded-md p-2 text-sm font-medium',
+              pathname === item.href
+                ? 'text-primary'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            )}
+          >
+            <item.icon className="h-5 w-5" />
+            <span className="text-xs">{item.label}</span>
+          </Link>
+        ))}
+
+        <div className="relative flex justify-center">
+            <div className="absolute -top-8">
+              <AddItemButton itemType={itemType} />
+            </div>
+        </div>
+
+        {navItems.slice(2).map((item, index) => (
+          <Link
+            key={index + 2}
+            href={item.href}
+            className={cn(
+              'group flex flex-col items-center justify-center gap-1 rounded-md p-2 text-sm font-medium',
+              pathname === item.href
+                ? 'text-primary'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            )}
+          >
+            <item.icon className="h-5 w-5" />
+            <span className="text-xs">{item.label}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
