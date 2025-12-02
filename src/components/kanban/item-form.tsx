@@ -31,7 +31,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useState, useTransition, useMemo, useEffect } from 'react';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { format, addDays, differenceInDays, isWithinInterval, parseISO, isValid, isPast } from 'date-fns';
+import { format, addDays, differenceInDays, isWithinInterval, parseISO, isValid, isPast, isAfter } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { collection } from 'firebase/firestore';
@@ -124,16 +124,12 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
   const availableMasterProducts = useMemo(() => {
     if (!allItems) return [];
     
-    // Find all assignments that are still active (not expired).
     const activeAssignments = allItems.filter(a => 
       a.parentId && a.status === 'Active' && a.endDate && !isPast(new Date(a.endDate))
     );
 
-    // Get the IDs of the master products that are tied to active assignments.
     const assignedMasterIds = new Set(activeAssignments.map(a => a.parentId));
 
-    // A master product is available if it's active AND it's not in the set of actively assigned masters.
-    // If we are editing an existing item, we should also include its own master product in the list.
     return allItems.filter(p => 
         !p.parentId && 
         p.status === 'Active' && 
@@ -192,9 +188,12 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
             form.setValue('username', master.username);
             form.setValue('password', master.password || ''); 
             form.setValue('category', master.category);
-            form.setValue('purchasePrice', master.purchasePrice);
-            if (master.startDate) form.setValue('startDate', format(new Date(master.startDate), "yyyy-MM-dd'T'HH:mm"));
-            if (master.endDate) form.setValue('endDate', format(new Date(master.endDate), "yyyy-MM-dd'T'HH:mm"));
+            form.setValue('purchasePrice', 0); // Reset sale price
+            
+            // Set start date to today for new assignments
+            form.setValue('startDate', format(new Date(), "yyyy-MM-dd'T'HH:mm"));
+            // Clear end date
+            form.setValue('endDate', '');
         }
     }
   }, [parentId, availableMasterProducts, form, item, itemType]);
@@ -235,7 +234,6 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
             endDate: values.endDate && isValid(new Date(values.endDate)) ? new Date(values.endDate).toISOString() : undefined,
         };
         
-        // This is the fix: ensure undefined is not passed for dates
         if (!itemData.startDate) delete itemData.startDate;
         if (!itemData.endDate) delete itemData.endDate;
 
@@ -289,7 +287,22 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     const start = startDateValue && isValid(new Date(startDateValue)) 
       ? new Date(startDateValue) 
       : new Date();
-    const newEndDate = addDays(start, days);
+      
+    let newEndDate = addDays(start, days);
+
+    // If there's a master product, ensure the new end date doesn't exceed its end date
+    if (selectedMaster && selectedMaster.endDate && isValid(new Date(selectedMaster.endDate))) {
+        const masterEndDate = new Date(selectedMaster.endDate);
+        if (isAfter(newEndDate, masterEndDate)) {
+            newEndDate = masterEndDate;
+            toast({
+                variant: 'default',
+                title: 'End Date Adjusted',
+                description: "The end date was adjusted to match the master product's expiration.",
+            });
+        }
+    }
+
     form.setValue('endDate', format(newEndDate, "yyyy-MM-dd'T'HH:mm"), {
       shouldValidate: true,
     });
@@ -327,14 +340,6 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     return () => clearInterval(intervalId);
   }, [assignmentEndDate]);
 
-
-  const masterProductDuration = useMemo(() => {
-    if (!selectedMaster || !selectedMaster.startDate || !selectedMaster.endDate) return null;
-    const start = new Date(selectedMaster.startDate);
-    const end = new Date(selectedMaster.endDate);
-    if (!isValid(start) || !isValid(end)) return null;
-    return differenceInDays(end, start);
-  }, [selectedMaster]);
 
   return (
     <Form {...form}>
