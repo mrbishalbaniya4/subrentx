@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Item, Category, Status } from '@/lib/types';
@@ -212,7 +213,7 @@ export function ListItem({ item }: ListItemProps) {
     }
     
     return {
-      text: `$${profit.toFixed(2)}`,
+      text: `Rs ${profit.toFixed(2)}`,
       className,
       Icon
     };

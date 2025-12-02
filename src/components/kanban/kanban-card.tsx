@@ -482,7 +482,7 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                                     totalProfit > 0 && "text-green-600",
                                     totalProfit < 0 && "text-red-600"
                                 )}>
-                                    <DollarSign className="h-6 w-6" />
+                                    <span className="text-2xl">Rs</span>
                                     {totalProfit.toFixed(2)}
                                 </p>
                             </div>

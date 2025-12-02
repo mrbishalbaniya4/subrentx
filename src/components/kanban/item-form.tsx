@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -546,7 +547,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
                   <Input type="number" placeholder="0.00" {...field} />
                 </FormControl>
                  <FormDescription>
-                    {isMasterProductForm ? "The default cost for this master product." : "The price for this specific assignment."}
+                    {isMasterProductForm ? "The default cost for this master product (in Rs)." : "The price for this specific assignment (in Rs)."}
                  </FormDescription>
                 <FormMessage />
               </FormItem>
