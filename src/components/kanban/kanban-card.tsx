@@ -186,11 +186,22 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
 
   const handleCopyAccountDetails = () => {
     if (!item.password) return;
-    
-    const expiryDate = item.endDate ? format(new Date(item.endDate), 'PPP') : 'N/A';
-    
-    const accountDetails = `Here are your rental account details:\nEmail: ${item.username || 'N/A'}\nPassword: ${item.password}\nExpiry Date: ${expiryDate}\nNote: Please don’t share these credentials with anyone.`;
-    
+
+    const rentalDuration =
+      item.startDate && item.endDate
+        ? differenceInDays(new Date(item.endDate), new Date(item.startDate))
+        : 0;
+
+    const expiryDate = item.endDate
+      ? format(new Date(item.endDate), 'PPP')
+      : 'N/A';
+
+    const accountDetails = `Here are your rental account details for ${rentalDuration} days:\nEmail: ${
+      item.username || 'N/A'
+    }\nPassword: ${
+      item.password
+    }\nExpiry Date: ${expiryDate}\nNote: Please don’t share these credentials with anyone.`;
+
     navigator.clipboard.writeText(accountDetails);
     setIsPasswordRevealed(true);
     setIsCopied(true);
@@ -592,3 +603,5 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     </>
   );
 }
+
+    
