@@ -87,6 +87,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [passwordChanged, setPasswordChanged] = useState(false);
+  const [countdown, setCountdown] = useState<string | null>(null);
   const { user } = useUser();
   const firestore = useFirestore();
 
@@ -99,14 +100,13 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
 
   const availableMasterProducts = useMemo(() => {
     if (!allItems) return [];
-    // Get a set of all parent IDs that are already in use by assigned items
     const assignedMasterIds = new Set(allItems.filter(i => i.parentId).map(i => i.parentId));
 
     return allItems.filter(p => 
-        !p.parentId && // It is a master product
-        p.status === 'Active' && // It is active
-        p.endDate && !isPast(new Date(p.endDate)) && // It is not expired
-        !assignedMasterIds.has(p.id) // It is not already assigned to another sub-product
+        !p.parentId && 
+        p.status === 'Active' && 
+        p.endDate && !isPast(new Date(p.endDate)) &&
+        !assignedMasterIds.has(p.id)
     );
   }, [allItems]);
 
@@ -164,10 +164,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
   const password = form.watch('password') || '';
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
   
-  // Is this form for a master product? (creating a new one or editing an existing one)
   const isMasterProductForm = itemType === 'master';
-  
-  // Are we creating a new assignment?
   const isCreatingAssignment = itemType === 'assigned' && !item;
 
   const onSubmit = (values: ItemFormValues) => {
@@ -176,9 +173,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
       return;
     }
 
-    // Date validation for sub-products
     if (values.parentId && values.startDate && values.endDate) {
-      // Find master in allItems, not just available ones, in case it was just assigned
       const master = allItems?.find(p => p.id === values.parentId);
       if (master && master.startDate && master.endDate) {
         const masterStart = parseISO(master.startDate);
@@ -285,19 +280,39 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     });
   };
 
-  const masterDuration = useMemo(() => {
-    if (!selectedMaster || !selectedMaster.startDate || !selectedMaster.endDate) return null;
-    const start = new Date(selectedMaster.startDate);
-    const end = new Date(selectedMaster.endDate);
-    if (!isValid(start) || !isValid(end)) return null;
-    return differenceInDays(end, start);
+  useEffect(() => {
+    if (!selectedMaster || !selectedMaster.endDate || !isValid(new Date(selectedMaster.endDate))) {
+      setCountdown(null);
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      const now = new Date();
+      const end = new Date(selectedMaster.endDate!);
+      const distance = end.getTime() - now.getTime();
+
+      if (distance < 0) {
+        setCountdown("Expired");
+        clearInterval(intervalId);
+        return;
+      }
+
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      setCountdown(`${days}d ${hours}h ${minutes}m ${seconds}s remaining`);
+    }, 1000);
+
+    return () => clearInterval(intervalId);
   }, [selectedMaster]);
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         
-        {isCreatingAssignment && ( // Only show when creating a new assignment
+        {isCreatingAssignment && (
           <div className="space-y-4 rounded-lg border bg-card p-4">
             <h3 className="text-lg font-medium">Assignment Setup</h3>
             <FormField
@@ -521,9 +536,9 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
                     <FormControl>
                       <Input type="datetime-local" {...field} />
                     </FormControl>
-                    {masterDuration !== null && (
+                    {countdown && (
                       <FormDescription>
-                        Master product is valid for {masterDuration} days.
+                        Time remaining: {countdown}
                       </FormDescription>
                     )}
                     <FormMessage />
