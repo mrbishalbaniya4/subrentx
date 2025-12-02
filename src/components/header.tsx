@@ -60,7 +60,7 @@ export function Header({
         </div>
         
         {user && isClient && !hideControls && (
-           <div className="flex w-full flex-col items-center gap-2 md:ml-auto md:w-auto md:flex-row">
+           <div className="hidden w-full flex-col items-center gap-2 md:ml-auto md:flex md:w-auto md:flex-row">
               <div className="relative w-full flex-1 md:max-w-xs">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -144,7 +144,11 @@ export function Header({
         )}
 
         <div className="ml-auto flex items-center gap-2">
-          {user && !hideControls && itemType !== 'summary' && <AddItemButton itemType={itemType} />}
+          {user && !hideControls && itemType !== 'summary' && (
+            <div className="hidden md:block">
+              <AddItemButton itemType={itemType} />
+            </div>
+          )}
           <UserNav />
         </div>
       </header>

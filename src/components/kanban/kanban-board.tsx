@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -190,7 +189,7 @@ export function KanbanBoard({ initialItems, itemType }: KanbanBoardProps) {
       onDragEnd={handleDragEnd}
       collisionDetection={closestCorners}
     >
-        <div className="flex flex-col gap-8 md:grid md:gap-4 md:[grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
+        <div className="flex flex-col gap-8 md:grid md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {columns.map(column => {
             const columnItems = items.filter(item => item.status === column.id);
             return (

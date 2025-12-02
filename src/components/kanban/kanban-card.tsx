@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useSortable } from '@dnd-kit/sortable';
@@ -509,14 +508,14 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                 <CardHeader className="flex-row items-center justify-between space-y-0 p-4 pb-2">
                     <CardTitle className="text-lg font-headline">Summary</CardTitle>
                 </CardHeader>
-                <CardContent className="flex-1 flex flex-col justify-center items-center p-4 text-center">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1 text-center">
+                <CardContent className="flex-1 space-y-4 p-4">
+                    <div className="flex justify-around text-center">
+                        <div className="space-y-1">
                             <p className="text-sm text-muted-foreground">Assignments</p>
                             <p className="text-3xl font-bold">{assignmentCount}</p>
                         </div>
                          {itemType === 'master' && (
-                            <div className="space-y-1 text-center">
+                            <div className="space-y-1">
                                 <p className="text-sm text-muted-foreground">Total Profit</p>
                                 <p className={cn(
                                     "text-3xl font-bold flex items-center justify-center gap-1",
@@ -603,5 +602,3 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     </>
   );
 }
-
-    
