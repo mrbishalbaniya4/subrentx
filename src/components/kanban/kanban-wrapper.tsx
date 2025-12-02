@@ -34,16 +34,13 @@ export function KanbanWrapper({
   const firestore = useFirestore();
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
   
-  // Set default view mode based on itemType
   useEffect(() => {
-    setViewMode(itemType === 'master' ? 'list' : 'kanban');
-  }, [itemType]);
-  
-  useEffect(() => {
-    if(initialViewMode) {
-      setViewMode(initialViewMode);
+    if (itemType === 'master' && initialViewMode === 'kanban') {
+        setViewMode('list');
+    } else {
+        setViewMode(initialViewMode);
     }
-  }, [initialViewMode]);
+  }, [itemType, initialViewMode]);
 
 
   const itemsQuery = useMemoFirebase(() => {
@@ -62,18 +59,18 @@ export function KanbanWrapper({
   }, [allItems, itemType]);
 
   useEffect(() => {
-    if (!filteredItems || !firestore || !user || itemType !== 'assigned') return;
+    if (!filteredItems || !firestore || !user) return;
 
     const now = new Date();
     filteredItems.forEach(item => {
-      if (item.endDate && item.status !== 'Expired' && item.status !== 'Archived') {
+      if (item.endDate && item.status !== 'Expired' && item.status !== 'Archived' && item.status !== 'Sold Out') {
         const endDate = new Date(item.endDate);
         if (isPast(endDate)) {
           updateItemStatus(firestore, user.uid, item.id, 'Expired');
         }
       }
     });
-  }, [filteredItems, firestore, user, itemType]);
+  }, [filteredItems, firestore, user]);
 
   const processedItems = useMemo(() => {
     if (!filteredItems) return [];
@@ -129,25 +126,24 @@ export function KanbanWrapper({
   const renderView = () => {
     const activeItems = processedItems.filter(item => item.status !== 'Archived');
     
-    if (itemType === 'master') {
-       switch (viewMode) {
-            case 'grid':
-                return <GridView items={processedItems || []} />;
-            case 'list':
-            default:
-                return <ProductList items={processedItems || []} />;
-       }
-    }
+    // Always show all items for Master Product Kanban view
+    const kanbanItems = itemType === 'master' ? processedItems : processedItems;
 
     switch (viewMode) {
       case 'kanban':
-        return <KanbanBoard initialItems={processedItems || []} />;
+        return <KanbanBoard initialItems={kanbanItems || []} />;
       case 'grid':
         return <GridView items={activeItems || []} />;
       case 'list':
+        if (itemType === 'master') {
+            return <ProductList items={processedItems || []} />;
+        }
         return <ListView items={activeItems || []} />;
       default:
-        return <KanbanBoard initialItems={processedItems || []} />;
+        if (itemType === 'master') {
+            return <ProductList items={processedItems || []} />;
+        }
+        return <KanbanBoard initialItems={kanbanItems || []} />;
     }
   };
 
