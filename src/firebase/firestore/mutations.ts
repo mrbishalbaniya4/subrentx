@@ -414,4 +414,30 @@ export async function saveUserProfile(
   }
 }
 
+export async function updateUserStatus(
+    firestore: Firestore,
+    userId: string,
+    newStatus: 'pending' | 'active' | 'suspended'
+): Promise<void> {
+    const userRef = doc(firestore, 'users', userId);
+    const dataToSave = {
+        status: newStatus,
+        updatedAt: serverTimestamp(),
+    };
+
+    try {
+        await updateDoc(userRef, dataToSave);
+    } catch (error) {
+        console.error('Error updating user status:', error);
+        errorEmitter.emit(
+            'permission-error',
+            new FirestorePermissionError({
+                path: userRef.path,
+                operation: 'update',
+                requestResourceData: dataToSave,
+            })
+        );
+        throw error;
+    }
+}
     

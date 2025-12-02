@@ -32,6 +32,7 @@ const createUserProfile = async (userCredential: UserCredential) => {
     email: user.email,
     firstName: user.displayName?.split(' ')[0] || '',
     lastName: user.displayName?.split(' ')[1] || '',
+    status: 'pending', // Set default status to 'pending'
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };

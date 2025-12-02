@@ -23,6 +23,11 @@
           "type": "string",
           "description": "User's last name."
         },
+        "status": {
+          "type": "string",
+          "description": "The approval status of the user account.",
+          "enum": ["pending", "active", "suspended"]
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp indicating when the user account was created.",
@@ -41,6 +46,7 @@
       "required": [
         "id",
         "email",
+        "status",
         "createdAt",
         "updatedAt"
       ]

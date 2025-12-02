@@ -1,37 +1,32 @@
 /**
- * Core Philosophy: This ruleset enforces a strict user-ownership model, with an
- * exception for a designated admin user. All data is sandboxed to the authenticated
- * user, meaning a user can only ever access their own information and the items they
- * create. The admin user has read-only access to all data for administrative purposes.
- * Unauthorized access to other users' data is strictly prohibited for non-admin users.
+ * Core Philosophy: This ruleset enforces a strict user-ownership model with an
+ * approval system, with an exception for a designated admin user. All data is
+ * sandboxed to the authenticated user, meaning a user can only ever access their
+ * own information and the items they create, BUT ONLY if their account status is 'active'.
+ * The admin user ('mrbishalbaniya4@gmail.com') has read and write access to all data
+ * for administrative purposes, including changing a user's status.
  *
- * Data Structure: The data is organized hierarchically to reflect ownership clearly.
- * A top-level 'users' collection holds user profile documents. All other data,
- * such as 'items' and 'activity-logs', is stored in subcollections directly under
- * the user's document (e.g., /users/{userId}/items/{itemId}).
+ * Data Structure: The data is organized hierarchically. A top-level 'users' collection
+ * holds user profile documents which contain a 'status' field ('pending', 'active', 'suspended').
+ * All other data ('items', 'activity-logs') is in subcollections under the user's document.
  *
  * Key Security Decisions:
- * - Admin Role: An admin user ('mrbishalbaniya4@gmail.com') is granted read access
- *   across all user data. This is for administrative oversight.
- * - User Enumeration Disabled for non-admins: Listing the top-level '/users' collection is disallowed
- *   for regular users to prevent malicious actors from scraping a list of all application users.
- *   The admin is granted list access.
- * - Path-Based Security: Rules primarily rely on the document path to determine ownership
- *   (e.g., checking if the {userId} in the path matches the authenticated user's ID).
- *   This is highly performant and secure.
- * - Profile Deletion Disabled: By default, users are not permitted to delete their
- *   own user profile document to prevent accidental data loss. This can be changed
- *   if the business logic requires it.
+ * - Admin Role: An admin user ('mrbishalbaniya4@gmail.com') is granted read/write access
+ *   across all user data, primarily to manage user statuses.
+ * - User Approval System:
+ *   - New users are created with a 'status' of 'pending'.
+ *   - Users with 'pending' or 'suspended' status can only read their own user document. They cannot
+ *     read or write any subcollection data (items, logs, etc.).
+ *   - Only the admin can change a user's status.
+ *   - Normal operations are only permitted for users with an 'active' status.
+ * - User Enumeration Disabled for non-admins: Regular users cannot list the '/users' collection.
+ * - Path-Based Security: Rules primarily rely on the document path to determine ownership.
  *
- * Denormalization for Authorization: The structure uses path-based ownership, a form
- * of denormalization where the owner's ID is part of the document path. This avoids
- * slow and costly `get()` calls in rules. For example, to secure an item at
- * `/users/{userId}/items/{itemId}`, the rule simply checks `request.auth.uid == userId`
- * without needing to read any other document.
- *
- * Structural Segregation: The entire data model segregates user data into private
- * trees. There are no public or shared collections, simplifying the security model
- * by ensuring all subcollections inherit the parent's ownership context.
+ * Denormalization for Authorization: The rules use `get()` to check the user's status from their
+ * profile document (`/users/{userId}`) before allowing access to subcollections. This is a
+ * necessary `get()` call to enforce the approval system. For example, to secure an item at
+ * `/users/{userId}/items/{itemId}`, the rule checks both `request.auth.uid == userId` and
+ * that `get(/databases/$(database)/documents/users/$(userId)).data.status == 'active'`.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -41,78 +36,51 @@ service cloud.firestore {
     // Helper Functions
     // ----------------------------------------------------------------------
 
-    /**
-     * Returns true if the user is signed into the application.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
     
-    /**
-     * Returns true if the logged-in user is the designated admin.
-     */
     function isAdmin() {
       return isSignedIn() && request.auth.token.email == 'mrbishalbaniya4@gmail.com';
     }
 
-    /**
-     * Returns true if the authenticated user's UID matches the provided userId.
-     * This is the primary function for enforcing user ownership.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-
-    /**
-     * Ensures an operation is performed by the owner on an existing document.
-     * CRITICAL for all update and delete operations.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * (CREATE) Validates that a new User document contains an 'id' field
-     * that correctly matches the document's path ID. Enforces relational integrity.
-     */
-    function hasValidUserId(userId) {
-      return request.resource.data.id == userId;
-    }
-
-    /**
-     * (UPDATE) Ensures the 'id' field of a User document cannot be changed
-     * after it has been created.
-     */
-    function isUserIdImmutable() {
-      return request.resource.data.id == resource.data.id;
+    
+    function isOwnerAndActive(userId) {
+        let userProfile = get(/databases/$(database)/documents/users/$(userId));
+        return isOwner(userId) && userProfile.data.status == 'active';
     }
     
-    /**
-     * (CREATE) Validates that a new Item document contains a 'userId' field
-     * that correctly matches the owner's ID from the path. Enforces relational integrity.
-     */
+    function isCreatingOwnPendingUser(userId) {
+        return isOwner(userId) &&
+               request.resource.data.id == userId &&
+               request.resource.data.status == 'pending';
+    }
+
+    function isUpdatingOwnProfile(userId) {
+        let isStatusUnchanged = request.resource.data.status == resource.data.status;
+        let isIdUnchanged = request.resource.data.id == resource.data.id;
+        return isOwner(userId) && isStatusUnchanged && isIdUnchanged;
+    }
+
+    function isAdminUpdatingProfile() {
+        return isAdmin() && request.resource.data.id == resource.data.id;
+    }
+    
     function hasValidItemData(userId) {
       return request.resource.data.userId == userId;
     }
     
-    /**
-     * (UPDATE) Ensures the 'userId' field of an Item document cannot be changed
-     * after it has been created.
-     */
     function isItemUserIdImmutable() {
       return request.resource.data.userId == resource.data.userId;
     }
 
-    /**
-     * (UPDATE) Ensures the 'createdAt' timestamp of an Item document cannot be changed.
-     */
     function isItemCreationTimestampImmutable() {
       return request.resource.data.createdAt == resource.data.createdAt;
     }
 
-    /**
-     * (CREATE) Validates that a new ActivityLog document has the correct owner ID.
-     */
     function hasValidLogData(userId) {
       return request.resource.data.userId == userId;
     }
@@ -121,55 +89,41 @@ service cloud.firestore {
     // Collection Rules
     // ----------------------------------------------------------------------
 
-    /**
-     * @description Controls access to the top-level 'users' collection.
-     * @path /users
-     * @allow (list) The admin can list all users. Normal users cannot, to prevent user enumeration.
-     */
     match /users/{userId} {
       /**
        * @description Controls access to individual user profile documents.
-       * @path /users/{userId}
-       * @allow (get) An authenticated user can read their own profile, or an admin can read any profile.
-       * @allow (list) Only the admin can list all users to prevent user enumeration.
-       * @allow (create) A user can create their own profile.
-       * @allow (update) A user can update their own profile.
-       * @deny (delete) Users cannot delete their own profiles by default.
-       * @principle Restricts access to a user's own data tree, with an exception for admin read access.
+       * @allow (get) Any signed-in user can read their own profile. Admin can read any profile.
+       * @allow (list) Only the admin can list users.
+       * @allow (create) A user can create their own profile with 'pending' status.
+       * @allow (update) A user can update their own profile (but not status). Admin can update anything.
        */
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
-      allow create: if isOwner(userId) && hasValidUserId(userId);
-      allow update: if isExistingOwner(userId) && isUserIdImmutable();
-      allow delete: if false; // Prevent users from deleting their own accounts by default
+      allow create: if isCreatingOwnPendingUser(userId);
+      allow update: if isUpdatingOwnProfile(userId) || isAdminUpdatingProfile();
+      allow delete: if false;
 
       /**
        * @description Controls access to a user's private vault items.
-       * @path /users/{userId}/items/{itemId}
-       * @allow (read, list) A user can read their own items, or an admin can read any user's items.
-       * @allow (write) Only the owner of the items can create, update, or delete them.
-       * @deny A user cannot read or write items belonging to another user.
-       * @principle Enforces document ownership for all write operations, but allows admin read access.
+       * @allow (read, write) Only the owner of an 'active' account can access their items. Admin can read anyone's.
        */
       match /items/{itemId} {
-        allow get: if isOwner(userId) || isAdmin();
-        allow list: if isOwner(userId) || isAdmin();
-        allow create: if isOwner(userId) && hasValidItemData(userId);
-        allow update: if isExistingOwner(userId) && isItemUserIdImmutable() && isItemCreationTimestampImmutable();
-        allow delete: if isExistingOwner(userId);
+        allow get: if isOwnerAndActive(userId) || isAdmin();
+        allow list: if isOwnerAndActive(userId) || isAdmin();
+        allow create: if isOwnerAndActive(userId) && hasValidItemData(userId);
+        allow update: if isOwnerAndActive(userId) && isItemUserIdImmutable() && isItemCreationTimestampImmutable();
+        allow delete: if isOwnerAndActive(userId);
       }
 
       /**
        * @description Controls access to a user's activity log.
-       * @path /users/{userId}/activity-logs/{logId}
-       * @allow (read, list) A user can read their own logs, or an admin can read any user's logs.
-       * @allow (create) Only the owner can have logs created under their profile.
-       * @deny (update, delete) Logs are immutable.
+       * @allow (read, list) Only the owner of an 'active' account can access their logs. Admin can read anyone's.
+       * @allow (create) Logs can only be created for an 'active' user.
        */
       match /activity-logs/{logId} {
-        allow get: if isOwner(userId) || isAdmin();
-        allow list: if isOwner(userId) || isAdmin();
-        allow create: if isOwner(userId) && hasValidLogData(userId);
+        allow get: if isOwnerAndActive(userId) || isAdmin();
+        allow list: if isOwnerAndActive(userId) || isAdmin();
+        allow create: if isOwnerAndActive(userId) && hasValidLogData(userId);
         allow update: if false;
         allow delete: if false;
       }
