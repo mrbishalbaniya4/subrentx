@@ -184,8 +184,10 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
 
   const handleCopyAccountDetails = () => {
     if (!item.password) return;
-
-    const accountDetails = `HERE IS YOUR ACCOUNT DETAILS\nEMAIL: ${item.username || 'N/A'}\nPASSWORD : ${item.password}\nnote: please dont share to onlyone`;
+    
+    const expiryDate = item.endDate ? format(new Date(item.endDate), 'PPP') : 'N/A';
+    
+    const accountDetails = `Here are your rental account details:\nEmail: ${item.username || 'N/A'}\nPassword: ${item.password}\nExpiry Date: ${expiryDate}\nNote: Please don’t share these credentials with anyone.`;
     
     navigator.clipboard.writeText(accountDetails);
     setIsPasswordRevealed(true);
