@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -74,7 +75,7 @@ export function AppLayout({
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <AppSidebar />
-      <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
+      <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 pb-20 sm:pb-0">
         <Header
           pageTitle={pageTitle}
           searchQuery={searchQuery}
