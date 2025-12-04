@@ -35,7 +35,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { ItemForm } from './item-form';
-import type { Item, ItemDetails, Category, Status } from '@/lib/types';
+import type { Item, Category, Status } from '@/lib/types';
 import { useState, useTransition, useMemo, useEffect, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { format, isPast, formatDistanceToNow, differenceInDays } from 'date-fns';
@@ -190,7 +190,7 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
 
     const detailsRef = doc(firestore, `users/${user.uid}/items/${item.id}/details/data`);
     const detailsSnap = await getDoc(detailsRef);
-    const details = detailsSnap.data() as ItemDetails;
+    const details = detailsSnap.data();
 
     if (!details?.password) {
         toast({ variant: 'destructive', title: 'No password set for this item.'});
@@ -269,57 +269,6 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
   
   const itemType = item.parentId ? 'assigned' : 'master';
 
-  const childrenQuery = useMemoFirebase(() => {
-    if (!firestore || !user || !item.id) return null;
-    const masterId = itemType === 'master' ? item.id : item.parentId;
-    if (!masterId) return null;
-    
-    return query(
-      collection(firestore, `users/${user.uid}/items`),
-      where('parentId', '==', masterId),
-      limit(50)
-    );
-  }, [firestore, user, item.id, item.parentId, itemType]);
-
-  const { data: childItems } = useCollection<Item>(childrenQuery);
-  
-  const assignmentCount = childItems?.length || 0;
-
-  const totalProfit = useMemo(() => {
-    if (itemType !== 'master' || !childItems) return 0;
-    const cost = item.purchasePrice || 0;
-    const revenue = childItems.reduce((acc, child) => acc + (child.purchasePrice || 0), 0);
-    return revenue - cost;
-  }, [childItems, itemType, item.purchasePrice]);
-
-  const getChildItemStatusBadge = useMemo(() => {
-    if (itemType !== 'master' || !childItems) return null;
-    
-    const activeChild = childItems.find(child => child.status === 'Active');
-    if (activeChild) {
-      return (
-         <Badge variant="outline" className="flex items-center gap-1.5 border-teal-200 bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300">
-          <Tags className="h-3 w-3" />
-          <span>On Sale</span>
-        </Badge>
-      )
-    }
-
-    const hasBeenRented = childItems.length > 0;
-    if (hasBeenRented) {
-        return (
-          <Badge variant="outline" className="flex items-center gap-1.5 border-orange-200 bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
-            <Bell className="h-3 w-3" />
-            <span>Available</span>
-          </Badge>
-        );
-    }
-    
-    return null;
-
-  }, [childItems, itemType, item.lastPasswordChange]);
-
-
   const masterExpirationInfo = () => {
     if (itemType !== 'assigned' || !item.masterEndDate) return null;
 
@@ -344,19 +293,14 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     let label = isMaster ? 'Cost' : 'Price';
 
     if (isMaster) {
-      if (totalProfit > 0) {
-        Icon = TrendingUp;
-        className = 'text-green-600 dark:text-green-500';
-      } else if (totalProfit < 0) {
-        Icon = TrendingDown;
-        className = 'text-red-600 dark:text-red-500';
-      }
-       text = `Rs ${totalProfit.toFixed(2)}`;
-       label = 'Profit/Loss';
+       // Profit calculation is removed as it's an unstable dependency
+       Icon = Minus;
+       text = `Rs ${price.toFixed(2)}`;
+       label = 'Cost';
     }
     
     return { Icon, className, text, label };
-  }, [item, totalProfit]);
+  }, [item]);
 
 
   return (
@@ -407,7 +351,6 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                     <div className="flex flex-wrap items-center gap-2">
                         {item.category && <Badge variant="outline" className={cn(categoryColors[item.category])}>{item.category}</Badge>}
                         {getUrgencyBadge()}
-                        {getChildItemStatusBadge}
                     </div>
                     {masterExpirationInfo()}
                     <div className="flex items-center gap-1.5 pt-2 text-xs text-muted-foreground">
@@ -482,13 +425,6 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                         <span className="text-muted-foreground">{profitLoss.label}:</span>
                         <span className={cn("font-semibold", profitLoss.className)}>{profitLoss.text}</span>
                     </div>
-                     {itemType === 'master' && (
-                        <div className="flex items-center gap-2 text-sm">
-                            <Users2 className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Assignments:</span>
-                            <span className="font-semibold">{assignmentCount}</span>
-                        </div>
-                    )}
                 </CardContent>
                 <CardFooter className="grid grid-cols-1 gap-2 p-2 pt-0">
                      <Button variant="outline" size="sm" onClick={() => setIsFlipped(false)}>
@@ -566,5 +502,7 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
 
 const MemoizedKanbanCard = memo(KanbanCard);
 export { MemoizedKanbanCard as KanbanCard };
+
+    
 
     
