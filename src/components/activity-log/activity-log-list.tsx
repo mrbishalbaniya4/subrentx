@@ -10,7 +10,7 @@ interface ActivityLogListProps {
 
 export function ActivityLogList({ logs }: ActivityLogListProps) {
   return (
-    <Card className="mx-auto max-w-4xl">
+    <Card className="mx-auto mt-4 max-w-4xl">
       <CardHeader>
         <CardTitle>Recent Activity</CardTitle>
       </CardHeader>
@@ -23,7 +23,7 @@ export function ActivityLogList({ logs }: ActivityLogListProps) {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-            <p className="text-muted-foreground">No recent activity found.</p>
+            <p className="text-muted-foreground">No recent activity found for the selected period.</p>
           </div>
         )}
       </CardContent>
