@@ -55,7 +55,7 @@ export async function createItem(
   userId: string,
   summaryData: Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'userId'>,
   detailsData: ItemDetails,
-  availableMasterProducts: Item[]
+  allItems: Item[]
 ): Promise<string> {
     const batch = writeBatch(firestore);
     const newItemRef = doc(collection(firestore, `users/${userId}/items`));
@@ -63,8 +63,12 @@ export async function createItem(
     
     let masterPrice = null;
     if (summaryData.parentId && summaryData.parentId !== 'none') {
-        const masterProduct = availableMasterProducts.find(p => p.id === summaryData.parentId);
-        if (masterProduct) {
+        // When creating, allItems might not be fully updated yet.
+        // It's better to fetch the master product directly if needed.
+        const masterRef = doc(firestore, `users/${userId}/items/${summaryData.parentId}`);
+        const masterSnap = await getDoc(masterRef);
+        if (masterSnap.exists()) {
+            const masterProduct = masterSnap.data() as Item;
             masterPrice = masterProduct.purchasePrice || 0;
         }
     }
@@ -136,30 +140,17 @@ export async function editItem(
     batch.update(itemRef, summaryToSave);
     batch.set(detailsRef, detailsData, { merge: true });
 
-    // If it's a master product and the password changed, update all children
-    const isMasterProduct = !originalData.parentId;
-    if (isMasterProduct && passwordChanged) {
-        const itemsCollection = collection(firestore, `users/${userId}/items`);
-        const childrenQuery = query(itemsCollection, where('parentId', '==', itemId));
-        const childrenSnapshot = await getDocs(childrenQuery);
-        
-        childrenSnapshot.forEach(childDoc => {
-            const childDetailsRef = doc(firestore, childDoc.ref.path, 'details', 'data');
-            const childItemRef = childDoc.ref;
-            batch.update(childItemRef, { lastPasswordChange: summaryToSave.lastPasswordChange, updatedAt: serverTimestamp() });
-            batch.update(childDetailsRef, { password: detailsData.password });
-        });
-    }
-    
     await batch.commit();
 
     let activityAction = 'updated';
     let activityDetails = 'Item details updated';
+    const isMasterProduct = !originalData.parentId;
+
     if (passwordChanged) {
         activityAction = 'password_changed';
         activityDetails = 'Password was changed';
         if (isMasterProduct) {
-            activityDetails += ' and propagated to assigned items.';
+            activityDetails += ' on master product.';
         }
     } else if ('status' in dataToUpdate && dataToUpdate.status !== originalData.status) {
         activityAction = 'updated';
