@@ -26,10 +26,14 @@ export default function RootLayout({
           rel="stylesheet"
         />
         <link rel="apple-touch-icon" href="/logo.svg" />
-        <meta name="theme-color" content="#1a1a1a" />
+        <meta name="theme-color" content="#2E3192" />
         <link rel="icon" href="/logo.svg" type="image/svg+xml" sizes="any" />
+         <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
       </head>
-      <body className="font-body antialiased">
+      <body className="font-body antialiased pt-safe-top pb-safe-bottom">
         <FirebaseClientProvider>
           <SidebarProvider>
             <ThemeProvider

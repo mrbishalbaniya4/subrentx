@@ -118,7 +118,7 @@ export function ChangePasswordForm() {
             />
 
             <div className="flex items-center justify-end gap-2 pt-4">
-              <Button type="submit" disabled={isPending}>
+              <Button type="submit" disabled={isPending} size="sm">
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Update Password
               </Button>

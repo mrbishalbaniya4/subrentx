@@ -27,36 +27,37 @@ function KanbanColumn({ id, title, items, isDropDisabled = false }: KanbanColumn
 
   const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => (
     <div style={style}>
-      <div className="px-2 py-2">
+      <div className="px-1 py-2">
          <KanbanCard item={items[index]} />
       </div>
     </div>
   );
 
   return (
-    <div className="flex flex-col">
-      <h2 className="mb-4 text-xl font-bold font-headline tracking-tight">
+    <div className="flex flex-col w-full md:min-w-[320px] md:max-w-[350px]">
+      <h2 className="mb-4 text-base font-semibold md:text-lg">
         {title} <span className="text-sm font-normal text-muted-foreground">({items.length})</span>
       </h2>
       <div
         ref={setNodeRef}
         className={cn(
-          'flex-1 rounded-lg border bg-card min-h-[10rem]',
+          'flex-1 rounded-xl border bg-card min-h-[10rem]',
            isDropDisabled && 'bg-muted/50'
         )}
       >
           <SortableContext items={itemIds}>
             {items.length > 0 ? (
                 <List
-                  height={500} // Adjust height as needed
+                  height={Math.min(window.innerHeight - 250, items.length * 270)}
                   itemCount={items.length}
-                  itemSize={260} // Approx height of KanbanCard + padding
+                  itemSize={270}
                   width="100%"
+                  className="p-2"
                 >
                   {Row}
                 </List>
             ) : (
-              <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed m-4">
+              <div className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed m-4">
                 <p className="text-sm text-muted-foreground">
                   {isDropDisabled ? 'Auto-managed' : 'Drop items here'}
                 </p>

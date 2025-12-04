@@ -376,275 +376,276 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        <div className="flex-1 space-y-4 overflow-y-auto p-1">
         
-        {isCreatingAssignment && (
-          <div className="space-y-4 rounded-lg border bg-card p-4">
-            <h3 className="text-lg font-medium">Assignment Setup</h3>
-            <FormField
-              control={form.control}
-              name="parentId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Assign from Master Product</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ''}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a master product..." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {availableMasterProducts.map(p => {
-                          const remainingDays = p.endDate && isValid(new Date(p.endDate)) ? differenceInDays(new Date(p.endDate), new Date()) : null;
-                          const daysText = remainingDays !== null 
-                              ? (remainingDays >= 0 ? `(${remainingDays} days remaining)` : '(Expired)')
-                              : '';
-                          return (
-                            <SelectItem key={p.id} value={p.id}>
-                                {p.name} {daysText}
-                            </SelectItem>
-                          )
-                      })}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>Select the master product this item belongs to.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {parentId && (
-              <>
-                  <FormField
-                    control={form.control}
-                    name="contactName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Assignee Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., John Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+          {isCreatingAssignment && (
+            <div className="space-y-4 rounded-lg border bg-card p-4">
+              <h3 className="text-base font-semibold">Assignment Setup</h3>
+              <FormField
+                control={form.control}
+                name="parentId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assign from Master Product</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a master product..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {availableMasterProducts.map(p => {
+                            const remainingDays = p.endDate && isValid(new Date(p.endDate)) ? differenceInDays(new Date(p.endDate), new Date()) : null;
+                            const daysText = remainingDays !== null 
+                                ? (remainingDays >= 0 ? `(${remainingDays} days remaining)` : '(Expired)')
+                                : '';
+                            return (
+                              <SelectItem key={p.id} value={p.id}>
+                                  {p.name} {daysText}
+                              </SelectItem>
+                            )
+                        })}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>Select the master product this item belongs to.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {parentId && (
+                <>
                     <FormField
-                    control={form.control}
-                    name="contactValue"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Assignee Contact (Phone/URL)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="+1234567890 or https://..." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-              </>
-            )}
-            <Separator />
-          </div>
-        )}
-
-        <div className="space-y-4">
-             <h3 className="text-lg font-medium">{isMasterProductForm ? "Master Product Details" : "Item Details"}</h3>
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Netflix Subscription" {...field} disabled={!!parentId && !isMasterProductForm} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={!!parentId && !isMasterProductForm}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Apeuni">Apeuni</SelectItem>
-                      <SelectItem value="Netflix">Netflix</SelectItem>
-                      <SelectItem value="Amazon">Amazon</SelectItem>
-                      <SelectItem value="Spotify">Spotify</SelectItem>
-                      <SelectItem value="Hulu">Hulu</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-        </div>
-        
-        <Separator />
-
-        <div className="space-y-4">
-            <h3 className="text-lg font-medium">Credentials</h3>
-            <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username/Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="user@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <div className="relative">
-                        <FormControl>
-                          <Input 
-                            type={isPasswordVisible ? 'text' : 'password'} 
-                            placeholder="••••••••" 
-                            {...field}
-                            onChange={(e) => {
-                                field.onChange(e);
-                                setPasswordChanged(true);
-                            }}
-                          />
-                        </FormControl>
-                        <div className="absolute right-1 top-1/2 flex -translate-y-1/2">
-                            <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground" onClick={() => setIsPasswordVisible(prev => !prev)} aria-label="Toggle password visibility">
-                                {isPasswordVisible ? <EyeOff /> : <Eye />}
-                            </Button>
-                             <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-accent" onClick={handleGeneratePassword} disabled={isGenerating} aria-label="Generate Password">
-                                {isGenerating ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-                            </Button>
-                        </div>
-                    </div>
-                     <div className="space-y-1 pt-1">
-                        <Progress value={passwordStrength * 20} className="h-2" />
-                        <p className="text-xs font-medium text-muted-foreground">
-                            {strengthLabels[passwordStrength]}
-                        </p>
-                        {item?.lastPasswordChange && (
-                            <p className="text-xs text-muted-foreground">
-                                Last changed: {format(new Date(item.lastPasswordChange), 'PPp')}
-                            </p>
-                        )}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-        </div>
-        
-        <Separator />
-
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Financials & Notes</h3>
-          <FormField
-            control={form.control}
-            name="purchasePrice"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{isMasterProductForm ? "Default Price" : "Sale Price"}</FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="0.00" {...field} />
-                </FormControl>
-                 <FormDescription>
-                    {isMasterProductForm ? "The default cost for this master product (in Rs)." : "The price for this specific assignment (in Rs)."}
-                 </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-           <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder={isMasterProductForm ? "Add notes for this master product..." : "Add notes for this assignment..."}
-                      {...field}
+                      control={form.control}
+                      name="contactName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Assignee Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., John Doe" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                      <FormField
+                      control={form.control}
+                      name="contactValue"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Assignee Contact (Phone/URL)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="+1234567890 or https://..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </>
               )}
-            />
-        </div>
+            </div>
+          )}
 
-        <Separator />
-        
-        <div className="space-y-4">
-            <h3 className="text-lg font-medium">Dates</h3>
-             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-               <FormField
+          <div className="space-y-4">
+              <h3 className="text-base font-semibold">{isMasterProductForm ? "Master Product Details" : "Item Details"}</h3>
+              <FormField
                 control={form.control}
-                name="startDate"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Start Date</FormLabel>
+                    <FormLabel>Name</FormLabel>
                     <FormControl>
-                      <Input type="datetime-local" {...field} />
+                      <Input placeholder="e.g., Netflix Subscription" {...field} disabled={!!parentId && !isMasterProductForm} />
                     </FormControl>
-                    {masterCountdown && (
-                      <FormDescription>
-                        Master expires in: {masterCountdown}
-                      </FormDescription>
-                    )}
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
-                name="endDate"
+                name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>End Date</FormLabel>
-                    <div className="relative">
+                    <FormLabel>Category</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!!parentId && !isMasterProductForm}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Apeuni">Apeuni</SelectItem>
+                        <SelectItem value="Netflix">Netflix</SelectItem>
+                        <SelectItem value="Amazon">Amazon</SelectItem>
+                        <SelectItem value="Spotify">Spotify</SelectItem>
+                        <SelectItem value="Hulu">Hulu</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+          </div>
+          
+          <Separator />
+
+          <div className="space-y-4">
+              <h3 className="text-base font-semibold">Credentials</h3>
+              <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username/Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="user@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <div className="relative">
+                          <FormControl>
+                            <Input 
+                              type={isPasswordVisible ? 'text' : 'password'} 
+                              placeholder="••••••••" 
+                              {...field}
+                              onChange={(e) => {
+                                  field.onChange(e);
+                                  setPasswordChanged(true);
+                              }}
+                            />
+                          </FormControl>
+                          <div className="absolute right-1 top-1/2 flex -translate-y-1/2">
+                              <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground" onClick={() => setIsPasswordVisible(prev => !prev)} aria-label="Toggle password visibility">
+                                  {isPasswordVisible ? <EyeOff /> : <Eye />}
+                              </Button>
+                              <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-accent" onClick={handleGeneratePassword} disabled={isGenerating} aria-label="Generate Password">
+                                  {isGenerating ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+                              </Button>
+                          </div>
+                      </div>
+                      <div className="space-y-1 pt-1">
+                          <Progress value={passwordStrength * 20} className="h-2" />
+                          <p className="text-xs font-medium text-muted-foreground">
+                              {strengthLabels[passwordStrength]}
+                          </p>
+                          {item?.lastPasswordChange && (
+                              <p className="text-xs text-muted-foreground">
+                                  Last changed: {format(new Date(item.lastPasswordChange), 'PPp')}
+                              </p>
+                          )}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+          </div>
+          
+          <Separator />
+
+          <div className="space-y-4">
+            <h3 className="text-base font-semibold">Financials & Notes</h3>
+            <FormField
+              control={form.control}
+              name="purchasePrice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{isMasterProductForm ? "Default Price" : "Sale Price"}</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="0.00" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                      {isMasterProductForm ? "The default cost for this master product (in Rs)." : "The price for this specific assignment (in Rs)."}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder={isMasterProductForm ? "Add notes for this master product..." : "Add notes for this assignment..."}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+          </div>
+
+          <Separator />
+          
+          <div className="space-y-4">
+              <h3 className="text-base font-semibold">Dates</h3>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Date</FormLabel>
                       <FormControl>
                         <Input type="datetime-local" {...field} />
                       </FormControl>
-                    </div>
-                     <div className="flex flex-wrap gap-2 pt-2">
-                      {[3, 5, 7, 10, 15, 20, 30, 90].map((days) => (
-                        <Button key={days} type="button" variant="outline" size="sm" onClick={() => setEndDateInDays(days)} className="text-xs">
-                          {days}d
-                        </Button>
-                      ))}
-                    </div>
-                    {assignmentCountdown && (
+                      {masterCountdown && (
                         <FormDescription>
-                            Assignment ends in: {assignmentCountdown}
+                          Master expires in: {masterCountdown}
                         </FormDescription>
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="endDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Date</FormLabel>
+                      <div className="relative">
+                        <FormControl>
+                          <Input type="datetime-local" {...field} />
+                        </FormControl>
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {[3, 5, 7, 10, 15, 20, 30, 90].map((days) => (
+                          <Button key={days} type="button" variant="outline" size="sm" onClick={() => setEndDateInDays(days)} className="text-xs">
+                            {days}d
+                          </Button>
+                        ))}
+                      </div>
+                      {assignmentCountdown && (
+                          <FormDescription>
+                              Assignment ends in: {assignmentCountdown}
+                          </FormDescription>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+          </div>
         </div>
-        
-        <div className="flex items-center justify-end gap-2 pt-4">
-            <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>
+
+        <div className="fixed bottom-0 left-0 right-0 border-t bg-background p-4 md:static md:border-none md:p-0 md:flex md:items-center md:justify-end md:gap-2">
+            <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)} className="hidden md:inline-flex">
                 Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" disabled={isPending} className="w-full md:w-auto" size="lg">
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {item ? 'Save Changes' : (isMasterProductForm ? 'Save Master Product' : 'Save Assignment')}
             </Button>

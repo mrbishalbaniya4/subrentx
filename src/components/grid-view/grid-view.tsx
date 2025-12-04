@@ -12,24 +12,22 @@ interface GridViewProps {
 export function GridView({ items }: GridViewProps) {
   const [columnWidth, setColumnWidth] = useState(300);
   const [columnCount, setColumnCount] = useState(3);
-  const rowHeight = 270; // Approximate height of a KanbanCard
+  const rowHeight = 280; // Approximate height of a KanbanCard + padding
 
   useEffect(() => {
     function handleResize() {
-      const width = window.innerWidth;
+      const containerWidth = window.innerWidth > 768 ? window.innerWidth - 80 : window.innerWidth - 32;
       let newColumnCount = 1;
-      if (width >= 1280) { // xl
-        newColumnCount = 5;
-      } else if (width >= 1024) { // lg
+      if (containerWidth >= 1280) { // lg
         newColumnCount = 4;
-      } else if (width >= 768) { // md
+      } else if (containerWidth >= 1024) { // md
         newColumnCount = 3;
-      } else if (width >= 640) { // sm
+      } else if (containerWidth >= 640) { // sm
         newColumnCount = 2;
       }
       
       setColumnCount(newColumnCount);
-      setColumnWidth(window.innerWidth / newColumnCount);
+      setColumnWidth(containerWidth / newColumnCount);
     }
 
     window.addEventListener('resize', handleResize);
@@ -57,7 +55,7 @@ export function GridView({ items }: GridViewProps) {
 
     return (
       <div style={style}>
-        <div className="p-2 h-full w-full">
+        <div className="h-full w-full p-2">
             <KanbanCard key={item.id} item={item} />
         </div>
       </div>
@@ -65,16 +63,8 @@ export function GridView({ items }: GridViewProps) {
   };
 
   return (
-    <Grid
-      className="grid-container"
-      columnCount={columnCount}
-      columnWidth={columnWidth}
-      height={window.innerHeight - 150} // Adjust as needed
-      rowCount={rowCount}
-      rowHeight={rowHeight}
-      width={window.innerWidth - 80} // Adjust for sidebar/padding
-    >
-      {Cell}
-    </Grid>
+     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {items.map(item => <KanbanCard key={item.id} item={item} />)}
+     </div>
   );
 }

@@ -7,6 +7,8 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, LogOut, MailCheck } from 'lucide-react';
+import { SubrentxLogo } from '@/components/icons/vaultbox-logo';
+import Link from 'next/link';
 
 export default function AwaitingApprovalPage() {
   const { user, isUserLoading } = useUser();
@@ -33,7 +35,15 @@ export default function AwaitingApprovalPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
+      <div className="absolute top-6 left-6">
+        <Link href="/" className="flex items-center gap-2">
+            <SubrentxLogo className="h-8 w-8 text-primary" />
+            <h1 className="font-headline text-xl font-bold text-foreground">
+                SubRentX
+            </h1>
+        </Link>
+      </div>
       <Card className="w-full max-w-md text-center">
         <CardHeader>
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-yellow-100 text-yellow-600">

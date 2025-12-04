@@ -18,11 +18,36 @@ import type { Item, Status } from '@/lib/types';
 import { updateItemStatus } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser } from '@/firebase';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { SortableContext } from '@dnd-kit/sortable';
 
 interface KanbanBoardProps {
     initialItems: Item[];
     itemType: 'master' | 'assigned';
 }
+
+function KanbanCollapsibleColumn({ id, title, items, isDropDisabled }: { id: Status, title: string, items: Item[], isDropDisabled: boolean }) {
+  const itemIds = items.map(i => i.id);
+
+  return (
+    <Collapsible defaultOpen={id === 'Active'}>
+      <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md bg-muted px-4 py-3 text-lg font-semibold">
+        <span>{title} ({items.length})</span>
+        <ChevronDown className="h-5 w-5 transition-transform [&[data-state=open]]:rotate-180" />
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className={cn("flex flex-col gap-4 p-4", isDropDisabled && 'bg-muted/50')}>
+           <SortableContext items={itemIds}>
+              {items.map(item => <KanbanCard key={item.id} item={item} />)}
+            </SortableContext>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 
 export function KanbanBoard({ initialItems, itemType }: KanbanBoardProps) {
   const [activeItem, setActiveItem] = useState<Item | null>(null);
@@ -189,20 +214,37 @@ export function KanbanBoard({ initialItems, itemType }: KanbanBoardProps) {
       onDragEnd={handleDragEnd}
       collisionDetection={closestCorners}
     >
-        <div className="flex flex-col gap-8 md:grid md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-            {columns.map(column => {
-            const columnItems = items.filter(item => item.status === column.id);
-            return (
-                <KanbanColumn
-                key={column.id}
-                id={column.id}
-                title={column.title}
-                items={columnItems}
-                isDropDisabled={column.id === 'Expired'}
-                />
-            );
-            })}
-        </div>
+      {/* Mobile: Collapsible Accordion */}
+      <div className="space-y-4 md:hidden">
+        {columns.map(column => {
+          const columnItems = items.filter(item => item.status === column.id);
+          return (
+            <KanbanCollapsibleColumn
+              key={column.id}
+              id={column.id}
+              title={column.title}
+              items={columnItems}
+              isDropDisabled={column.id === 'Expired'}
+            />
+          );
+        })}
+      </div>
+
+      {/* Desktop: Traditional Kanban */}
+      <div className="hidden md:flex md:space-x-6 overflow-x-auto">
+        {columns.map(column => {
+          const columnItems = items.filter(item => item.status === column.id);
+          return (
+            <KanbanColumn
+              key={column.id}
+              id={column.id}
+              title={column.title}
+              items={columnItems}
+              isDropDisabled={column.id === 'Expired'}
+            />
+          );
+        })}
+      </div>
       <DragOverlay>
         {activeItem ? <KanbanCard item={activeItem} isOverlay /> : null}
       </DragOverlay>

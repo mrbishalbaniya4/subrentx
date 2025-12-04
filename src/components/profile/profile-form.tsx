@@ -88,7 +88,7 @@ export function ProfileForm({ userProfile }: { userProfile: any }) {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="firstName"
@@ -131,7 +131,7 @@ export function ProfileForm({ userProfile }: { userProfile: any }) {
             />
 
             <div className="flex items-center justify-end gap-2 pt-4">
-              <Button type="submit" disabled={isPending}>
+              <Button type="submit" disabled={isPending} size="sm">
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Changes
               </Button>

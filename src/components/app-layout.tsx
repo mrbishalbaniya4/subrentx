@@ -73,9 +73,9 @@ export function AppLayout({
   }, []);
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+    <div className="flex min-h-screen w-full flex-col bg-background">
       <AppSidebar />
-      <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 pb-20 sm:pb-0">
+      <div className="flex flex-col md:pl-14">
         <Header
           pageTitle={pageTitle}
           searchQuery={searchQuery}
@@ -92,9 +92,11 @@ export function AppLayout({
           itemType={itemType}
           hideControls={hideControls}
         />
-        {children({ searchQuery, filterCategory, filterUrgency, sortBy, viewMode })}
+        <div className="p-4 pb-24">
+          {children({ searchQuery, filterCategory, filterUrgency, sortBy, viewMode })}
+        </div>
       </div>
-      {isMobile && <MobileBottomNav itemType={itemType} hideControls={hideControls} />}
+      {isClient && isMobile && <MobileBottomNav itemType={itemType} hideControls={hideControls} />}
     </div>
   );
 }
@@ -103,7 +105,7 @@ function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
+    <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background md:flex">
       <nav className="flex flex-col items-center gap-4 px-2 py-4">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -161,6 +163,18 @@ function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
+              isActive={pathname === '/profile'}
+              tooltip="Profile"
+            >
+              <Link href="/profile">
+                <Users />
+                <span>Profile</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
               isActive={pathname === '/settings'}
               tooltip="Settings"
             >
@@ -183,53 +197,27 @@ function MobileBottomNav({ itemType, hideControls }: { itemType: 'master' | 'ass
   const navItems = [
     { href: '/rental', label: 'Rentals', icon: LayoutDashboard },
     { href: '/products', label: 'Products', icon: ShoppingBag },
-    { href: '/summary', label: 'Summary', icon: AreaChart },
     { href: '/activity-log', label: 'Activity', icon: History },
+    { href: '/profile', label: 'Profile', icon: Users },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 z-50 w-full border-t bg-background/95 backdrop-blur-sm sm:hidden">
-      <div className="relative mx-auto grid h-16 max-w-lg grid-cols-5 items-center px-2">
-        {navItems.slice(0, 2).map((item, index) => (
-          <Link
-            key={index}
-            href={item.href}
-            className={cn(
-              'group flex flex-col items-center justify-center gap-1 rounded-md p-2 text-sm font-medium',
-              pathname === item.href
-                ? 'text-primary'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-            )}
-          >
-            <item.icon className="h-5 w-5" />
-            <span className="text-xs">{item.label}</span>
-          </Link>
-        ))}
-
-        <div className="relative flex justify-center">
-            {!hideControls && itemType !== 'summary' && (
-              <div className="absolute -top-8">
-                <AddItemButton itemType={itemType} />
-              </div>
-            )}
-        </div>
-
-        {navItems.slice(2).map((item, index) => (
-          <Link
-            key={index + 2}
-            href={item.href}
-            className={cn(
-              'group flex flex-col items-center justify-center gap-1 rounded-md p-2 text-sm font-medium',
-              pathname === item.href
-                ? 'text-primary'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-            )}
-          >
-            <item.icon className="h-5 w-5" />
-            <span className="text-xs">{item.label}</span>
-          </Link>
-        ))}
-      </div>
+    <div className="fixed bottom-0 left-0 z-40 w-full border-t bg-background flex justify-around py-2">
+      {navItems.map((item) => (
+        <Link
+          key={item.href}
+          href={item.href}
+          className={cn(
+            'group flex flex-col items-center justify-center gap-1 rounded-md p-2 text-sm font-medium w-1/4',
+            pathname === item.href
+              ? 'text-primary'
+              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+          )}
+        >
+          <item.icon className="h-5 w-5" />
+          <span className="text-xs">{item.label}</span>
+        </Link>
+      ))}
     </div>
   );
 }

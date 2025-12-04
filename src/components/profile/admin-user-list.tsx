@@ -138,63 +138,91 @@ export function AdminUserList() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Admin: All Users</CardTitle>
-        <CardDescription>
-          A list of all users who have signed up for the application.
+        <CardTitle className="text-base font-semibold md:text-lg">Admin: User Management</CardTitle>
+        <CardDescription className="text-sm">
+          Approve, reject, or suspend user accounts.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Signed Up</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users && users.map(user => (
-              <TableRow key={user.id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9">
-                      <AvatarFallback>
-                        {getInitials(user.firstName, user.lastName, user.email)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="grid gap-0.5">
-                      <p className="font-medium">
-                        {user.firstName || 'N/A'} {user.lastName}
-                      </p>
-                    </div>
+        {/* Mobile View */}
+        <div className="space-y-4 md:hidden">
+          {users && users.map(user => (
+            <div key={user.id} className="rounded-lg border bg-card p-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback>{getInitials(user.firstName, user.lastName, user.email)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-semibold text-sm">{user.firstName || ''} {user.lastName || ''}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
                   </div>
-                </TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  {user.createdAt
-                    ? formatDistanceToNow(user.createdAt.toDate(), { addSuffix: true })
-                    : 'N/A'}
-                </TableCell>
-                <TableCell>
-                   <Badge variant={user.email === 'mrbishalbaniya4@gmail.com' ? 'default' : 'secondary'}>
-                        {user.email === 'mrbishalbaniya4@gmail.com' ? 'Admin' : 'User'}
-                    </Badge>
-                </TableCell>
-                <TableCell>
-                    <Badge className={cn(statusColors[user.status])}>
-                        {user.status}
-                    </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                    <UserActions user={user} />
-                </TableCell>
+                </div>
+                <Badge className={cn('text-xs', statusColors[user.status])}>
+                  {user.status}
+                </Badge>
+              </div>
+              <div className="flex justify-end pt-2">
+                 <UserActions user={user} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop View */}
+        <div className="hidden md:block">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Signed Up</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {users && users.map(user => (
+                <TableRow key={user.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9">
+                        <AvatarFallback>
+                          {getInitials(user.firstName, user.lastName, user.email)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="grid gap-0.5">
+                        <p className="font-medium text-sm">
+                          {user.firstName || 'N/A'} {user.lastName}
+                        </p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm">{user.email}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {user.createdAt
+                      ? formatDistanceToNow(user.createdAt.toDate(), { addSuffix: true })
+                      : 'N/A'}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={user.email === 'mrbishalbaniya4@gmail.com' ? 'default' : 'secondary'}>
+                          {user.email === 'mrbishalbaniya4@gmail.com' ? 'Admin' : 'User'}
+                      </Badge>
+                  </TableCell>
+                  <TableCell>
+                      <Badge className={cn('text-xs', statusColors[user.status])}>
+                          {user.status}
+                      </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                      <UserActions user={user} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );

@@ -1,5 +1,5 @@
 import { AddItemButton } from '@/components/kanban/add-item-button';
-import { VaultboxLogo } from '@/components/icons/vaultbox-logo';
+import { SubrentxLogo } from '@/components/icons/vaultbox-logo';
 import { UserNav } from '@/components/user-nav';
 import { useUser } from '@/firebase';
 import { Input } from '@/components/ui/input';
@@ -52,12 +52,10 @@ export function Header({
   const { user } = useUser();
 
   return (
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-        <div className="flex w-full flex-shrink-0 items-center gap-2 md:w-auto">
-           <h1 className="font-headline text-xl font-bold text-foreground">
-              {pageTitle}
-            </h1>
-        </div>
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background p-4 md:h-auto md:border-0 md:bg-transparent md:px-6">
+        <h1 className="text-lg font-semibold md:text-xl">
+            {pageTitle}
+        </h1>
         
         {user && isClient && !hideControls && (
            <div className="hidden w-full flex-col items-center gap-2 md:ml-auto md:flex md:w-auto md:flex-row">
@@ -116,27 +114,27 @@ export function Header({
                     variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
                     size="icon"
                     onClick={() => onViewModeChange('kanban')}
-                    className={cn(viewMode === 'kanban' && 'shadow-sm')}
+                    className={cn('h-8 w-8', viewMode === 'kanban' && 'shadow-sm')}
                   >
-                    <KanbanSquare className="h-5 w-5" />
+                    <KanbanSquare className="h-4 w-4 md:h-5 md:w-5" />
                     <span className="sr-only">Kanban View</span>
                   </Button>
                   <Button
                     variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
                     size="icon"
                     onClick={() => onViewModeChange('grid')}
-                     className={cn(viewMode === 'grid' && 'shadow-sm')}
+                     className={cn('h-8 w-8', viewMode === 'grid' && 'shadow-sm')}
                   >
-                    <LayoutGrid className="h-5 w-5" />
+                    <LayoutGrid className="h-4 w-4 md:h-5 md:w-5" />
                     <span className="sr-only">Grid View</span>
                   </Button>
                   <Button
                     variant={viewMode === 'list' ? 'secondary' : 'ghost'}
                     size="icon"
                     onClick={() => onViewModeChange('list')}
-                     className={cn(viewMode === 'list' && 'shadow-sm')}
+                     className={cn('h-8 w-8', viewMode === 'list' && 'shadow-sm')}
                   >
-                    <List className="h-5 w-5" />
+                    <List className="h-4 w-4 md:h-5 md:w-5" />
                     <span className="sr-only">List View</span>
                   </Button>
                 </div>
@@ -146,6 +144,11 @@ export function Header({
         <div className="ml-auto flex items-center gap-2">
           {user && !hideControls && itemType !== 'summary' && (
             <div className="hidden md:block">
+              <AddItemButton itemType={itemType} />
+            </div>
+          )}
+          {user && (
+            <div className="md:hidden">
               <AddItemButton itemType={itemType} />
             </div>
           )}
