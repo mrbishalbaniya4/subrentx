@@ -312,26 +312,24 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     });
   };
 
-  const handleGeneratePassword = () => {
+  const handleGeneratePassword = async () => {
     setIsGenerating(true);
-    startTransition(async () => {
-      const result = await generatePasswordAction({ length: 16, includeNumbers: true, includeSymbols: true });
-      if (result.password) {
-        form.setValue('password', result.password, { shouldValidate: true });
-        setPasswordChanged(true);
-        toast({
-          title: 'Password Generated',
-          description: 'A new strong password has been set.',
-        });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Generation Failed',
-          description: result.error,
-        });
-      }
-      setIsGenerating(false);
-    });
+    const result = await generatePasswordAction({ length: 16, includeNumbers: true, includeSymbols: true });
+    if (result.password) {
+      form.setValue('password', result.password, { shouldValidate: true });
+      setPasswordChanged(true);
+      toast({
+        title: 'Password Generated',
+        description: 'A new strong password has been set.',
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Generation Failed',
+        description: result.error,
+      });
+    }
+    setIsGenerating(false);
   };
 
   const setEndDateInDays = (days: number) => {
