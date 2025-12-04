@@ -157,7 +157,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
       ? {
           ...item,
           username: item.username ?? '',
-          password: '',
+          password: '', // Password is set via useEffect from details
           pin: '',
           notes: '',
           contactName: item.contactName ?? '',
@@ -192,7 +192,6 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     if (item && itemDetails) {
       form.reset({
         ...item,
-        ...itemDetails,
         username: item.username ?? '',
         password: itemDetails.password ?? '',
         pin: itemDetails.pin ?? '',
@@ -204,7 +203,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
         endDate: item.endDate && isValid(new Date(item.endDate)) ? format(new Date(item.endDate), "yyyy-MM-dd'T'HH:mm") : '',
       });
     }
-  }, [item, itemDetails, form]);
+  }, [item, itemDetails]);
 
 
   const parentId = form.watch('parentId');
@@ -677,5 +676,3 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     </Form>
   );
 }
-
-    
