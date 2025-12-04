@@ -60,6 +60,7 @@ import { useFirestore, useUser } from '@/firebase';
 
 interface ListItemProps {
   item: Item;
+  style?: React.CSSProperties;
 }
 
 const categoryColors: Record<Category, string> = {
@@ -73,11 +74,12 @@ const categoryColors: Record<Category, string> = {
 
 const statusColors: Record<string, string> = {
   Active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+  'Sold Out': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
   Expired: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
 };
 
 
-function ListItem({ item }: ListItemProps) {
+function ListItem({ item, style }: ListItemProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -222,10 +224,12 @@ function ListItem({ item }: ListItemProps) {
   const urgency = getUrgencyInfo();
   const itemType = item.parentId ? 'assigned' : 'master';
 
+  const cellStyle = "p-4 align-middle [&:has([role=checkbox])]:pr-0";
+
   return (
     <>
-      <TableRow>
-        <TableCell className="font-medium">
+      <div style={style} className="flex items-center border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+        <div className={cn(cellStyle, "font-medium w-[250px]")}>
           <div className="flex flex-col">
             <span>{item.name}</span>
             {item.contactName && (
@@ -235,30 +239,30 @@ function ListItem({ item }: ListItemProps) {
               </div>
             )}
           </div>
-        </TableCell>
-        <TableCell>
+        </div>
+        <div className={cn(cellStyle, "flex-1")}>
           {item.category && (
             <Badge variant="outline" className={cn("border", categoryColors[item.category])}>
               {item.category}
             </Badge>
           )}
-        </TableCell>
-        <TableCell>
+        </div>
+        <div className={cn(cellStyle, "flex-1")}>
           <Badge variant="outline" className={cn(statusColors[item.status] || 'bg-gray-100')}>
             {item.status}
           </Badge>
-        </TableCell>
-        <TableCell className={cn(urgency.className)}>
+        </div>
+        <div className={cn(cellStyle, "flex-1", urgency.className)}>
             {urgency.text}
-        </TableCell>
-         <TableCell className={cn("font-medium", profitLoss.className)}>
+        </div>
+         <div className={cn(cellStyle, "flex-1 font-medium", profitLoss.className)}>
             <div className="flex items-center gap-1.5">
               <profitLoss.Icon className="h-4 w-4" />
               <span>{profitLoss.text}</span>
             </div>
-        </TableCell>
-        <TableCell className="text-muted-foreground">{lastUpdated}</TableCell>
-        <TableCell className="text-right">
+        </div>
+        <div className={cn(cellStyle, "flex-1 text-muted-foreground")}>{lastUpdated}</div>
+        <div className={cn(cellStyle, "w-[50px] text-right")}>
            <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -286,10 +290,10 @@ function ListItem({ item }: ListItemProps) {
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent>
-                     {(['Active', 'Archived'] as Status[]).map((status) => (
+                     {(['Active', 'Sold Out', 'Archived'] as Status[]).map((status) => (
                        <DropdownMenuItem
                         key={status}
-                        disabled={item.status === status || isPending}
+                        disabled={item.status === status || isPending || status === 'Expired'}
                         onClick={() => handleStatusChange(status)}
                       >
                          {status === 'Archived' && item.status === 'Archived' ? (
@@ -324,8 +328,8 @@ function ListItem({ item }: ListItemProps) {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-        </TableCell>
-      </TableRow>
+        </div>
+      </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">

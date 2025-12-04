@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Item } from '@/lib/types';
@@ -26,9 +27,7 @@ export function ListView({ items }: ListViewProps) {
   }
 
   const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => (
-    <div style={style}>
-      <ListItem item={items[index]} />
-    </div>
+    <ListItem item={items[index]} style={style} />
   );
 
   return (
@@ -37,25 +36,23 @@ export function ListView({ items }: ListViewProps) {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[250px]">Name</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Expires</TableHead>
-            <TableHead>Profit/Loss</TableHead>
-            <TableHead>Last Updated</TableHead>
+            <TableHead className="flex-1">Category</TableHead>
+            <TableHead className="flex-1">Status</TableHead>
+            <TableHead className="flex-1">Expires</TableHead>
+            <TableHead className="flex-1">Profit/Loss</TableHead>
+            <TableHead className="flex-1">Last Updated</TableHead>
             <TableHead className="w-[50px] text-right"></TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
-          <List
-            height={600}
-            itemCount={items.length}
-            itemSize={73}
-            width="100%"
-          >
-            {Row}
-          </List>
-        </TableBody>
       </Table>
+       <List
+        height={600}
+        itemCount={items.length}
+        itemSize={73}
+        width="100%"
+      >
+        {Row}
+      </List>
     </div>
   );
 }
