@@ -373,13 +373,70 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                         </div>
                     )}
                   </div>
-                  <div className="flex items-center">
-                    <div
-                        {...listeners}
-                        className="cursor-grab p-1 text-muted-foreground transition-opacity hover:opacity-80"
+                  <div
+                    {...listeners}
+                    className="cursor-grab p-1 text-muted-foreground transition-opacity hover:opacity-80"
+                  >
+                    <GripVertical className="h-5 w-5" />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3 p-4 pt-0">
+                  {item.username && (
+                    <p className="truncate text-sm text-muted-foreground">{item.username}</p>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                      <p className="flex-1 truncate text-sm font-mono text-muted-foreground">
+                        ••••••••
+                      </p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="z-10 h-7 w-7 shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopyAccountDetails();
+                        }}
                       >
-                        <GripVertical className="h-5 w-5" />
+                        {isCopied ? (
+                          <CopyCheck className="h-4 w-4 text-primary" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                        <span className="sr-only">Copy account details</span>
+                      </Button>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-2">
+                     {item.category && (
+                        <Badge variant="outline" className={cn(categoryColors[item.category])}>
+                            {item.category}
+                        </Badge>
+                    )}
+                    {getUrgencyBadge()}
+                    {getChildItemStatusBadge}
+                   </div>
+                   
+                   {masterExpirationInfo()}
+
+                    <div className="flex items-center gap-1.5 pt-2 text-xs text-muted-foreground">
+                      <RefreshCcw className="h-3 w-3" />
+                      <span>Last updated {lastUpdated}</span>
                     </div>
+                </CardContent>
+                 <CardFooter className="p-2 pt-0">
+                    <Button variant="ghost" size="sm" className="w-full" onClick={() => setIsFlipped(true)}>
+                        <Info className="mr-2 h-4 w-4"/>
+                        Details
+                    </Button>
+                </CardFooter>
+            </Card>
+
+            {/* Back of the Card */}
+            <Card className="absolute top-0 left-0 w-full h-full backface-hidden rotate-y-180 flex flex-col">
+                <CardHeader className="flex-row items-center justify-between space-y-0 p-4 pb-2">
+                    <CardTitle className="text-lg font-headline">Summary</CardTitle>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -445,65 +502,6 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3 p-4 pt-0">
-                  {item.username && (
-                    <p className="truncate text-sm text-muted-foreground">{item.username}</p>
-                  )}
-
-                  <div className="flex items-center gap-2">
-                      <p className="flex-1 truncate text-sm font-mono text-muted-foreground">
-                        ••••••••
-                      </p>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="z-10 h-7 w-7 shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCopyAccountDetails();
-                        }}
-                      >
-                        {isCopied ? (
-                          <CopyCheck className="h-4 w-4 text-primary" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                        <span className="sr-only">Copy account details</span>
-                      </Button>
-                  </div>
-                  
-                  <div className="flex flex-wrap items-center gap-2">
-                     {item.category && (
-                        <Badge variant="outline" className={cn(categoryColors[item.category])}>
-                            {item.category}
-                        </Badge>
-                    )}
-                    {getUrgencyBadge()}
-                    {getChildItemStatusBadge}
-                   </div>
-                   
-                   {masterExpirationInfo()}
-
-                    <div className="flex items-center gap-1.5 pt-2 text-xs text-muted-foreground">
-                      <RefreshCcw className="h-3 w-3" />
-                      <span>Last updated {lastUpdated}</span>
-                    </div>
-                </CardContent>
-                 <CardFooter className="p-2 pt-0">
-                    <Button variant="ghost" size="sm" className="w-full" onClick={() => setIsFlipped(true)}>
-                        <Info className="mr-2 h-4 w-4"/>
-                        Details
-                    </Button>
-                </CardFooter>
-            </Card>
-
-            {/* Back of the Card */}
-            <Card className="absolute top-0 left-0 w-full h-full backface-hidden rotate-y-180 flex flex-col">
-                <CardHeader className="flex-row items-center justify-between space-y-0 p-4 pb-2">
-                    <CardTitle className="text-lg font-headline">Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="flex-1 space-y-4 p-4">
                     <div className="flex justify-around text-center">
