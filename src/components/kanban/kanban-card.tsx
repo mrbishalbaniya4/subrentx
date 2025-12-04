@@ -36,13 +36,12 @@ import {
 } from '@/components/ui/dialog';
 import { ItemForm } from './item-form';
 import type { Item, Category, Status } from '@/lib/types';
-import { useState, useTransition, useMemo, useEffect, memo } from 'react';
+import { useState, useTransition, useMemo, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { format, isPast, formatDistanceToNow, differenceInDays } from 'date-fns';
 import {
   CalendarClock,
-  GripVertical,
-  MoreVertical,
+  MoreHorizontal,
   Trash2,
   FilePenLine,
   Loader2,
@@ -60,15 +59,12 @@ import {
   Info,
   ShieldCheck,
   DollarSign,
-  Bell,
-  Tags,
   ArrowLeft,
-  Users2,
 } from 'lucide-react';
 import { archiveItem, duplicateItem, updateItemStatus, deleteItem } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, limit, getDoc, doc } from 'firebase/firestore';
+import { useFirestore, useUser } from '@/firebase';
+import { getDoc, doc } from 'firebase/firestore';
 
 
 interface KanbanCardProps {
@@ -293,7 +289,6 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     let label = isMaster ? 'Cost' : 'Price';
 
     if (isMaster) {
-       // Profit calculation is removed as it's an unstable dependency
        Icon = Minus;
        text = `Rs ${price.toFixed(2)}`;
        label = 'Cost';
@@ -313,7 +308,6 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
           isDragging && 'z-50',
           isOverlay && 'shadow-2xl'
         )}
-        {...attributes}
       >
         <div
             className={cn(
@@ -324,8 +318,8 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
             {/* Front of the Card */}
             <Card className="w-full h-full backface-hidden">
                  <CardHeader className="relative flex-row items-start gap-4 space-y-0 p-4 pb-2">
-                    <div className="flex-1 space-y-1">
-                        <CardTitle className="text-lg font-headline">{item.name}</CardTitle>
+                    <div className="flex-1 space-y-1" {...listeners}>
+                        <CardTitle className="text-lg font-headline cursor-grab">{item.name}</CardTitle>
                         {item.contactName && (
                             <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                                 <User className="h-4 w-4" />
@@ -333,9 +327,10 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                             </div>
                         )}
                     </div>
-                    <div {...listeners} className="cursor-grab p-1 text-muted-foreground transition-opacity hover:opacity-80">
-                        <GripVertical className="h-5 w-5" />
-                    </div>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsDialogOpen(true)}>
+                        <FilePenLine className="h-4 w-4" />
+                        <span className="sr-only">Edit Item</span>
+                    </Button>
                 </CardHeader>
                 <CardContent className="space-y-3 p-4 pt-0">
                     {item.username && (
@@ -376,7 +371,7 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full">
-                            <MoreVertical className="h-4 w-4" />
+                            <MoreHorizontal className="h-4 w-4" />
                             <span className="sr-only">More options</span>
                         </Button>
                       </DropdownMenuTrigger>
@@ -502,7 +497,3 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
 
 const MemoizedKanbanCard = memo(KanbanCard);
 export { MemoizedKanbanCard as KanbanCard };
-
-    
-
-    
