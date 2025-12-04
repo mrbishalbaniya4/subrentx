@@ -416,19 +416,19 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
               <span>Last updated {lastUpdated}</span>
             </div>
         </CardContent>
-          <CardFooter className="p-2 pt-0">
+          <CardFooter className="grid grid-cols-2 gap-2 p-2 pt-0">
+            <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(true)}>
+                <FilePenLine className="mr-2 h-4 w-4" />
+                Edit
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="w-full">
-                    <Info className="mr-2 h-4 w-4"/>
-                    Details & Actions
+                <Button variant="ghost" size="sm">
+                    <MoreVertical className="mr-2 h-4 w-4"/>
+                    Actions
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={() => setIsDialogOpen(true)}>
-                  <FilePenLine className="mr-2 h-4 w-4" />
-                  <span>Edit</span>
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleDuplicate} disabled={isPending}>
                   <CopyPlus className="mr-2 h-4 w-4" />
                   <span>Duplicate</span>
