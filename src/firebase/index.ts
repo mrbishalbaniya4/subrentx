@@ -3,10 +3,19 @@
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence, Firestore } from 'firebase/firestore'
+import { 
+  getFirestore, 
+  initializeFirestore, 
+  enableIndexedDbPersistence, 
+  Firestore,
+  CACHE_SIZE_UNLIMITED
+} from 'firebase/firestore'
 
 let firebaseApp: FirebaseApp | null = null;
 let firestoreInstance: Firestore | null = null;
+
+// Explicitly set a cache size. For example, 100MB.
+// const CACHE_SIZE_BYTES = 100 * 1024 * 1024; 
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
@@ -18,7 +27,7 @@ export function initializeFirebase() {
         firebaseApp = initializeApp();
       } catch (e) {
         if (process.env.NODE_ENV === "production") {
-          console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
+          console.warn('Automatic initialization failed. Falling back to firebaseConfig object.', e);
         }
         firebaseApp = initializeApp(firebaseConfig);
       }
@@ -26,7 +35,14 @@ export function initializeFirebase() {
   }
 
   if (!firestoreInstance) {
-    firestoreInstance = getFirestore(firebaseApp);
+    // Initialize Firestore with cache settings
+    firestoreInstance = initializeFirestore(firebaseApp, {
+        // Explicitly set the cache size. 
+        // CACHE_SIZE_UNLIMITED is the default, but setting it here makes it intentional.
+        // You can replace it with a specific byte value, like CACHE_SIZE_BYTES.
+        cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+    });
+
     try {
       enableIndexedDbPersistence(firestoreInstance)
         .catch((err) => {
