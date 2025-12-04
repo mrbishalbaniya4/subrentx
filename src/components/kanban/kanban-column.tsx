@@ -66,10 +66,8 @@ function KanbanColumn({ id, title, items, isDropDisabled = false }: KanbanColumn
                   {Row}
                 </List>
             ) : (
-              <div className="m-4 flex h-24 items-center justify-center rounded-lg border-2 border-dashed">
-                <p className="text-sm text-muted-foreground">
-                  {isDropDisabled ? 'Auto-managed' : 'Drop items here'}
-                </p>
+             <div className="m-4 flex h-24 items-center justify-center rounded-lg">
+                {isDropDisabled && <p className="text-sm text-muted-foreground">Auto-managed</p>}
               </div>
             )}
           </SortableContext>
