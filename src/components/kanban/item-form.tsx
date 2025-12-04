@@ -155,6 +155,12 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     defaultValues: item
       ? {
           ...item,
+          username: item.username ?? '',
+          password: item.password ?? '',
+          pin: item.pin ?? '',
+          notes: item.notes ?? '',
+          contactName: item.contactName ?? '',
+          contactValue: item.contactValue ?? '',
           parentId: item.parentId || null,
           startDate: item.startDate && isValid(new Date(item.startDate))
             ? format(new Date(item.startDate), "yyyy-MM-dd'T'HH:mm")
@@ -186,12 +192,18 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
       form.reset({
         ...item,
         ...itemDetails,
+        username: item.username ?? '',
+        password: itemDetails.password ?? '',
+        pin: itemDetails.pin ?? '',
+        notes: itemDetails.notes ?? '',
+        contactName: item.contactName ?? '',
+        contactValue: item.contactValue ?? '',
         parentId: item.parentId || null,
         startDate: item.startDate && isValid(new Date(item.startDate)) ? format(new Date(item.startDate), "yyyy-MM-dd'T'HH:mm") : '',
         endDate: item.endDate && isValid(new Date(item.endDate)) ? format(new Date(item.endDate), "yyyy-MM-dd'T'HH:mm") : '',
       });
     }
-  }, [item, itemDetails, form]);
+  }, [item, itemDetails]);
 
 
   const parentId = form.watch('parentId');
@@ -293,7 +305,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
   const handleGeneratePassword = () => {
     setIsGenerating(true);
     startTransition(async () => {
-      const result = await generatePasswordAction();
+      const result = await generatePasswordAction({ length: 16, includeNumbers: true, includeSymbols: true });
       if (result.password) {
         form.setValue('password', result.password, { shouldValidate: true });
         setPasswordChanged(true);
@@ -499,7 +511,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
                     <FormItem>
                       <FormLabel>Username/Email</FormLabel>
                       <FormControl>
-                        <Input placeholder="user@example.com" {...field} value={field.value ?? ''} />
+                        <Input placeholder="user@example.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -517,7 +529,6 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
                               type={isPasswordVisible ? 'text' : 'password'} 
                               placeholder="••••••••" 
                               {...field}
-                              value={field.value ?? ''}
                               onChange={(e) => {
                                   field.onChange(e);
                                   setPasswordChanged(true);
@@ -580,7 +591,6 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
                       <Textarea
                         placeholder={isMasterProductForm ? "Add notes for this master product..." : "Add notes for this assignment..."}
                         {...field}
-                        value={field.value ?? ''}
                       />
                     </FormControl>
                     <FormMessage />
