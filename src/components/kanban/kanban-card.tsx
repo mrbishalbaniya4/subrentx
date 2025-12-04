@@ -364,13 +364,7 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
             {/* Front of the Card */}
             <Card className="w-full h-full backface-hidden">
                 <CardHeader className="relative flex-row items-start gap-4 space-y-0 p-4 pb-2">
-                  <div
-                    className="flex-1 space-y-1"
-                    onClick={() => setIsDialogOpen(true)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={e => e.key === 'Enter' && setIsDialogOpen(true)}
-                  >
+                  <div className="flex-1 space-y-1">
                     <CardTitle className="text-lg font-headline">{item.name}</CardTitle>
                     {item.contactName && (
                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -453,11 +447,7 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                     </DropdownMenu>
                   </div>
                 </CardHeader>
-                <CardContent
-                  className="space-y-3 p-4 pt-0"
-                  onClick={() => setIsDialogOpen(true)}
-                  role="button"
-                >
+                <CardContent className="space-y-3 p-4 pt-0">
                   {item.username && (
                     <p className="truncate text-sm text-muted-foreground">{item.username}</p>
                   )}
@@ -612,3 +602,5 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
 
 const MemoizedKanbanCard = memo(KanbanCard);
 export { MemoizedKanbanCard as KanbanCard };
+
+    
