@@ -9,6 +9,7 @@ import {
   TableHead,
   TableBody,
 } from '@/components/ui/table';
+import { FixedSizeList as List } from 'react-window';
 
 interface ListViewProps {
   items: Item[];
@@ -22,6 +23,14 @@ export function ListView({ items }: ListViewProps) {
       </div>
     );
   }
+  
+  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => (
+    <div style={style}>
+      <TableBody>
+        <ListItem item={items[index]} />
+      </TableBody>
+    </div>
+  );
 
   return (
     <div className="rounded-lg border">
@@ -37,12 +46,15 @@ export function ListView({ items }: ListViewProps) {
             <TableHead className="w-[50px] text-right"></TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
-          {items.map((item) => (
-            <ListItem key={item.id} item={item} />
-          ))}
-        </TableBody>
       </Table>
+       <List
+          height={600} // Adjust height as needed
+          itemCount={items.length}
+          itemSize={73} // Height of a TableRow
+          width="100%"
+        >
+          {Row}
+        </List>
     </div>
   );
 }

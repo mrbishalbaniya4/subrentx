@@ -6,6 +6,7 @@ import type { Item, Status } from '@/lib/types';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { FixedSizeList as List } from 'react-window';
 
 interface KanbanColumnProps {
   id: Status;
@@ -25,32 +26,45 @@ export function KanbanColumn({ id, title, items, isDropDisabled = false }: Kanba
     disabled: isDropDisabled,
   });
 
+  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => (
+    <div style={style}>
+      <div className="px-2 py-2">
+         <KanbanCard item={items[index]} />
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex flex-col">
       <h2 className="mb-4 text-xl font-bold font-headline tracking-tight">
         {title} <span className="text-sm font-normal text-muted-foreground">({items.length})</span>
       </h2>
-      <ScrollArea
+      <div
         ref={setNodeRef}
         className={cn(
-          'flex-1 rounded-lg border bg-card p-2',
+          'flex-1 rounded-lg border bg-card min-h-[10rem]',
            isDropDisabled && 'bg-muted/50'
         )}
       >
-        <div className="flex min-h-[6rem] flex-col gap-4">
           <SortableContext items={itemIds}>
             {items.length > 0 ? (
-              items.map(item => <KanbanCard key={item.id} item={item} />)
+                <List
+                  height={500} // Adjust height as needed
+                  itemCount={items.length}
+                  itemSize={260} // Approx height of KanbanCard + padding
+                  width="100%"
+                >
+                  {Row}
+                </List>
             ) : (
-              <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed">
+              <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed m-4">
                 <p className="text-sm text-muted-foreground">
                   {isDropDisabled ? 'Auto-managed' : 'Drop items here'}
                 </p>
               </div>
             )}
           </SortableContext>
-        </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
