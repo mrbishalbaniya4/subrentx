@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -68,6 +69,7 @@ export function KanbanBoard({ initialItems, itemType }: KanbanBoardProps) {
   } else {
       columns = [
         { id: 'Active', title: 'Active' },
+        { id: 'Sold Out', title: 'Sold Out' },
         { id: 'Expired', title: 'Expired' },
         { id: 'Archived', title: 'Archived' },
       ];
