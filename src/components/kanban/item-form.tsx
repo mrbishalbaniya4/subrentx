@@ -191,7 +191,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
         endDate: item.endDate && isValid(new Date(item.endDate)) ? format(new Date(item.endDate), "yyyy-MM-dd'T'HH:mm") : '',
       });
     }
-  }, [item, itemDetails, form]);
+  }, [item, itemDetails]);
 
 
   const parentId = form.watch('parentId');
