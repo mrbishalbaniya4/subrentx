@@ -6,7 +6,7 @@ import { KanbanBoard } from '@/components/kanban/kanban-board';
 import { GridView } from '@/components/grid-view/grid-view';
 import { ListView } from '@/components/list-view/list-view';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import type { Item, FilterCategory, FilterUrgency, SortByType, ViewMode } from '@/lib/types';
 import { isPast, isWithinInterval, addDays } from 'date-fns';
 import type { User } from 'firebase/auth';
@@ -35,7 +35,12 @@ export function KanbanWrapper({
 
   const itemsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return query(collection(firestore, 'users', user.uid, 'items'));
+    // Main query is now limited and ordered by creation date for general performance
+    return query(
+        collection(firestore, 'users', user.uid, 'items'),
+        orderBy('createdAt', 'desc'),
+        limit(200) 
+    );
   }, [firestore, user]);
 
   const { data: allItems } = useCollection<Item>(itemsQuery);
@@ -54,7 +59,7 @@ export function KanbanWrapper({
       // Logic for master products: check if they should be 'Sold Out' or 'Active'
       const masterProducts = allItems.filter(item => !item.parentId);
       for (const master of masterProducts) {
-        const childrenQuery = query(collection(firestore, 'users', user.uid, 'items'), where('parentId', '==', master.id));
+        const childrenQuery = query(collection(firestore, 'users', user.uid, 'items'), where('parentId', '==', master.id), limit(1));
         const childrenSnapshot = await getDocs(childrenQuery);
         const hasActiveChild = !childrenSnapshot.empty && childrenSnapshot.docs.some(doc => doc.data().status === 'Active');
 
@@ -129,6 +134,8 @@ export function KanbanWrapper({
       items = items.filter(item => item.endDate && isPast(new Date(item.endDate)));
     }
     
+    // Note: Sorting is now performed client-side on the limited dataset.
+    // For larger datasets, sorting should be done via Firestore queries with proper indexes.
     if (sortBy === 'alphabetical') {
       items.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortBy === 'endDate') {

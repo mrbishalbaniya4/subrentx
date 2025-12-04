@@ -65,7 +65,7 @@ import {
 import { archiveItem, duplicateItem, updateItemStatus, deleteItem } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, limit } from 'firebase/firestore';
 
 
 interface KanbanCardProps {
@@ -270,7 +270,8 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     
     return query(
       collection(firestore, `users/${user.uid}/items`),
-      where('parentId', '==', masterId)
+      where('parentId', '==', masterId),
+      limit(50) // Limit child items for performance
     );
   }, [firestore, user, item.id, item.parentId, itemType]);
 

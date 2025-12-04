@@ -1,7 +1,7 @@
 'use client';
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import {
   Card,
@@ -110,7 +110,11 @@ export function AdminUserList() {
 
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'users'));
+    return query(
+      collection(firestore, 'users'), 
+      orderBy('createdAt', 'desc'), 
+      limit(100)
+    );
   }, [firestore]);
 
   const { data: users, isLoading, error } = useCollection<UserProfile>(usersQuery);

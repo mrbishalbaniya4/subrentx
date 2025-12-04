@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { ActivityLogList } from '@/components/activity-log/activity-log-list';
@@ -32,7 +32,8 @@ export default function ActivityLogPage() {
     if (!firestore || !user) return null;
     return query(
       collection(firestore, 'users', user.uid, 'activity-logs'),
-      orderBy('timestamp', 'desc')
+      orderBy('timestamp', 'desc'),
+      limit(100)
     );
   }, [firestore, user]);
 

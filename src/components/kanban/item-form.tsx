@@ -32,7 +32,7 @@ import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebas
 import { format, addDays, differenceInDays, isWithinInterval, parseISO, isValid, isPast, isAfter } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import { collection } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 
 
 const itemSchema = z.object({
@@ -112,12 +112,16 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const itemsQuery = useMemoFirebase(() => {
+  const allItemsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'users', user.uid, 'items');
+    return query(
+      collection(firestore, 'users', user.uid, 'items'),
+      orderBy('createdAt', 'desc'),
+      limit(200) // Limit fetching all items
+    );
   }, [firestore, user]);
-
-  const { data: allItems } = useCollection<Item>(itemsQuery);
+  
+  const { data: allItems } = useCollection<Item>(allItemsQuery);
 
   const availableMasterProducts = useMemo(() => {
     if (!allItems) return [];
@@ -133,7 +137,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
         p.status === 'Active' && 
         p.endDate && !isPast(new Date(p.endDate)) &&
         (!assignedMasterIds.has(p.id) || (item && p.id === item.parentId))
-    );
+    ).slice(0, 100); // Limit dropdown options client-side
   }, [allItems, item]);
 
 
