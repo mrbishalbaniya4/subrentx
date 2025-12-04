@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,7 +34,7 @@ import { useFirestore, useUser, useCollection, useDoc, useMemoFirebase } from '@
 import { format, addDays, differenceInDays, isWithinInterval, parseISO, isValid, isPast, isAfter } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import { collection, query, where, orderBy, limit, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 
 
 const itemSchema = z.object({
@@ -156,9 +157,9 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
       ? {
           ...item,
           username: item.username ?? '',
-          password: item.password ?? '',
-          pin: item.pin ?? '',
-          notes: item.notes ?? '',
+          password: '',
+          pin: '',
+          notes: '',
           contactName: item.contactName ?? '',
           contactValue: item.contactValue ?? '',
           parentId: item.parentId || null,
@@ -203,7 +204,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
         endDate: item.endDate && isValid(new Date(item.endDate)) ? format(new Date(item.endDate), "yyyy-MM-dd'T'HH:mm") : '',
       });
     }
-  }, [item, itemDetails]);
+  }, [item, itemDetails, form]);
 
 
   const parentId = form.watch('parentId');
@@ -218,21 +219,31 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
 
   // Effect to auto-fill form when a master product is selected for a new assignment
   useEffect(() => {
+    const fetchMasterDetails = async (masterId: string) => {
+        if (!firestore || !user) return;
+        const detailsRef = doc(firestore, `users/${user.uid}/items/${masterId}/details/data`);
+        const detailsSnap = await getDoc(detailsRef);
+        if (detailsSnap.exists()) {
+            const masterDetails = detailsSnap.data();
+            form.setValue('password', masterDetails.password || '');
+        }
+    };
+
     if (itemType === 'assigned' && !item && parentId) { // Creating new assignment
         const master = availableMasterProducts.find(p => p.id === parentId);
         if (master) {
             form.setValue('name', master.name);
             form.setValue('username', master.username || '');
-            // Don't auto-fill password from master. That's now in details.
-            // form.setValue('password', master.password || ''); 
             form.setValue('category', master.category);
             form.setValue('purchasePrice', 0); // Reset sale price
             
             form.setValue('startDate', format(new Date(), "yyyy-MM-dd'T'HH:mm"));
             form.setValue('endDate', '');
+            
+            fetchMasterDetails(parentId);
         }
     }
-  }, [parentId, availableMasterProducts, form, item, itemType]);
+  }, [parentId, availableMasterProducts, form, item, itemType, firestore, user]);
 
   const password = form.watch('password') || '';
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
@@ -666,3 +677,5 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     </Form>
   );
 }
+
+    
