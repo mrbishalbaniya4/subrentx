@@ -61,14 +61,12 @@ export function KanbanBoard({ initialItems, itemType }: KanbanBoardProps) {
 
   if (itemType === 'master') {
       columns = [
-        { id: 'Active', title: 'Unassigned' },
         { id: 'Sold Out', title: 'Assigned' },
         { id: 'Expired', title: 'Expired' },
         { id: 'Archived', title: 'Archived' },
       ];
   } else {
       columns = [
-        { id: 'Active', title: 'Active' },
         { id: 'Sold Out', title: 'Sold Out' },
         { id: 'Expired', title: 'Expired' },
         { id: 'Archived', title: 'Archived' },
