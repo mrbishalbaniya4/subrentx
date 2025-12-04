@@ -419,7 +419,7 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
           <CardFooter className="grid grid-cols-2 gap-2 p-2 pt-0">
             <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(true)}>
                 <FilePenLine className="mr-2 h-4 w-4" />
-                Edit
+                Details
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
