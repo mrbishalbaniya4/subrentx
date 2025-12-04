@@ -24,6 +24,11 @@
           "type": "string",
           "description": "User's last name."
         },
+        "status": {
+          "type": "string",
+          "description": "The approval status of the user account.",
+          "enum": ["pending", "active", "suspended"]
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp indicating when the user account was created.",
@@ -42,6 +47,7 @@
       "required": [
         "id",
         "email",
+        "status",
         "createdAt",
         "updatedAt"
       ]
@@ -50,7 +56,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Item",
       "type": "object",
-      "description": "Represents a stored item. Can be a 'master product' (if parentId is null) or an 'assigned item' (if parentId is set).",
+      "description": "Represents the summary of a stored item. Contains essential data for list views.",
       "properties": {
         "id": {
           "type": "string",
@@ -71,18 +77,6 @@
         "username": {
           "type": "string",
           "description": "Username associated with the item."
-        },
-        "password": {
-          "type": "string",
-          "description": "Password associated with the item. Should be encrypted before storing."
-        },
-        "pin": {
-          "type": "string",
-          "description": "PIN associated with the item. Should be encrypted before storing."
-        },
-        "notes": {
-          "type": "string",
-          "description": "Additional notes related to the item."
         },
         "startDate": {
           "type": "string",
@@ -149,6 +143,26 @@
         "createdAt",
         "updatedAt"
       ]
+    },
+    "ItemDetails": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ItemDetails",
+      "type": "object",
+      "description": "Stores large or sensitive fields for an item, such as credentials and notes.",
+      "properties": {
+        "password": {
+          "type": "string",
+          "description": "Password associated with the item."
+        },
+        "pin": {
+          "type": "string",
+          "description": "PIN associated with the item."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes related to the item."
+        }
+      }
     },
     "ActivityLog": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -221,7 +235,7 @@
           "schema": {
             "$ref": "#/backend/entities/Item"
           },
-          "description": "Stores items owned by a specific user. Path-based ownership ensures only the user can access their items.",
+          "description": "Stores the summary of items owned by a specific user. Path-based ownership ensures only the user can access their items.",
           "params": [
             {
               "name": "userId",
@@ -232,6 +246,18 @@
               "description": "The unique ID of the item."
             }
           ]
+        }
+      },
+      {
+        "path": "/users/{userId}/items/{itemId}/details/data",
+        "definition": {
+            "entityName": "ItemDetails",
+            "schema": { "$ref": "#/backend/entities/ItemDetails" },
+            "description": "Stores large or sensitive fields for a specific item. Access is inherited from the parent item's security rules.",
+             "params": [
+                { "name": "userId", "description": "The unique ID of the user." },
+                { "name": "itemId", "description": "The unique ID of the item." }
+            ]
         }
       },
       {
@@ -258,5 +284,3 @@
     "reasoning": "The Firestore structure is designed to ensure secure and scalable data storage for VaultBox, focusing on authorization independence, clarity, and adherence to best practices.  It leverages path-based ownership and explicit data denormalization to avoid complex security rules that rely on `get()` calls.  \n\nThe structure uses the following patterns:\n\n*   **/users/{userId}**:  This collection stores user profiles. Access is restricted to the authenticated user (path-based ownership).\n*   **/users/{userId}/items/{itemId}**: Stores items owned by a specific user. Path-based ownership ensures only the user can access their items.\n*   **/users/{userId}/activity-logs/{logId}**: Stores activity logs for a specific user. Path-based ownership ensures only the user can access their own activity history.\n\n**Authorization Independence:** The primary method to achieve Authorization Independence is through path-based ownership. Since each `Item` is stored within the `/users/{userId}/items/{itemId}` path, security rules can directly verify that `request.auth.uid == userId` without needing to `get()` any data from parent documents. This simplifies rules and enables atomic operations.\n\n**QAPs (Rules are not Filters):** The structure supports secure `list` operations because of path-based ownership. When listing items under `/users/{userId}/items`, rules can efficiently verify the user's ID against the `userId` path parameter, ensuring that only the user's own items are returned. This avoids needing to filter based on document data, which is an anti-pattern in Firestore security rules."
   }
 }
-
-    

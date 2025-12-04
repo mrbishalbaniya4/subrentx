@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,17 +23,17 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Item } from '@/lib/types';
+import type { Item, ItemWithDetails } from '@/lib/types';
 import { createItem, editItem } from '@/firebase/firestore/mutations';
 import { generatePasswordAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useState, useTransition, useMemo, useEffect } from 'react';
-import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useUser, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { format, addDays, differenceInDays, isWithinInterval, parseISO, isValid, isPast, isAfter } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, doc } from 'firebase/firestore';
 
 
 const itemSchema = z.object({
@@ -54,7 +55,7 @@ const itemSchema = z.object({
 type ItemFormValues = z.infer<typeof itemSchema>;
 
 interface ItemFormProps {
-  item?: Item;
+  item?: Item; // The summary item
   setDialogOpen: (open: boolean) => void;
   itemType: 'master' | 'assigned';
 }
@@ -111,6 +112,14 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
 
   const { user } = useUser();
   const firestore = useFirestore();
+  
+  // Fetch details only when editing an item
+  const itemDetailsRef = useMemoFirebase(() => {
+    if (!firestore || !user || !item) return null;
+    return doc(firestore, `users/${user.uid}/items/${item.id}/details/data`);
+  }, [firestore, user, item]);
+
+  const { data: itemDetails, isLoading: areDetailsLoading } = useDoc(itemDetailsRef);
 
   const allItemsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -171,6 +180,20 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
         },
   });
   
+  // Populate form with details once they are loaded
+  useEffect(() => {
+    if (item && itemDetails) {
+      form.reset({
+        ...item,
+        ...itemDetails,
+        parentId: item.parentId || null,
+        startDate: item.startDate && isValid(new Date(item.startDate)) ? format(new Date(item.startDate), "yyyy-MM-dd'T'HH:mm") : '',
+        endDate: item.endDate && isValid(new Date(item.endDate)) ? format(new Date(item.endDate), "yyyy-MM-dd'T'HH:mm") : '',
+      });
+    }
+  }, [item, itemDetails, form]);
+
+
   const parentId = form.watch('parentId');
   const assignmentEndDate = form.watch('endDate');
   const startDateValue = form.watch('startDate');
@@ -188,13 +211,12 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
         if (master) {
             form.setValue('name', master.name);
             form.setValue('username', master.username);
-            form.setValue('password', master.password || ''); 
+            // Don't auto-fill password from master. That's now in details.
+            // form.setValue('password', master.password || ''); 
             form.setValue('category', master.category);
             form.setValue('purchasePrice', 0); // Reset sale price
             
-            // Set start date to today for new assignments
             form.setValue('startDate', format(new Date(), "yyyy-MM-dd'T'HH:mm"));
-            // Clear end date
             form.setValue('endDate', '');
         }
     }
@@ -229,26 +251,31 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
 
     startTransition(async () => {
       try {
-        const itemData: Partial<Item> = {
-            ...values,
+        const { notes, password, pin, ...summaryValues } = values;
+
+        const summaryData: Partial<Item> = {
+            ...summaryValues,
             parentId: isMasterProductForm ? null : values.parentId,
             startDate: values.startDate && isValid(new Date(values.startDate)) ? new Date(values.startDate).toISOString() : undefined,
             endDate: values.endDate && isValid(new Date(values.endDate)) ? new Date(values.endDate).toISOString() : undefined,
         };
         
-        if (!itemData.startDate) delete itemData.startDate;
-        if (!itemData.endDate) delete itemData.endDate;
+        if (!summaryData.startDate) delete summaryData.startDate;
+        if (!summaryData.endDate) delete summaryData.endDate;
 
+        const detailsData = { notes, password, pin };
 
         if (passwordChanged) {
-            itemData.lastPasswordChange = new Date().toISOString();
+            summaryData.lastPasswordChange = new Date().toISOString();
         }
 
         if (item) {
-          await editItem(firestore, user.uid, { ...item, ...itemData });
+          // Pass both summary and details to the edit function
+          await editItem(firestore, user.uid, { ...item, ...summaryData }, detailsData);
           toast({ title: 'Success', description: 'Item updated successfully.' });
         } else {
-          await createItem(firestore, user.uid, itemData as Item, allItems || []);
+          // Pass both summary and details to the create function
+          await createItem(firestore, user.uid, summaryData as Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'userId'>, detailsData, allItems || []);
           toast({ title: 'Success', description: `${isMasterProductForm ? 'Master product' : 'Assigned item'} added successfully.` });
         }
         setDialogOpen(false);
@@ -292,7 +319,6 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
       
     let newEndDate = addDays(start, days);
 
-    // If there's a master product, ensure the new end date doesn't exceed its end date
     if (selectedMaster && selectedMaster.endDate && isValid(new Date(selectedMaster.endDate))) {
         const masterEndDate = new Date(selectedMaster.endDate);
         if (isAfter(newEndDate, masterEndDate)) {
@@ -310,7 +336,6 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     });
   };
 
-  // Master product countdown timer
   useEffect(() => {
     if (!selectedMaster) {
       setMasterCountdown(null);
@@ -326,7 +351,6 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     return () => clearInterval(intervalId);
   }, [selectedMaster]);
 
-  // Assignment countdown timer
   useEffect(() => {
     if (!assignmentEndDate) {
       setAssignmentCountdown(null);
@@ -342,6 +366,13 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
     return () => clearInterval(intervalId);
   }, [assignmentEndDate]);
 
+  if (item && areDetailsLoading) {
+    return (
+        <div className="flex h-64 items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    );
+  }
 
   return (
     <Form {...form}>

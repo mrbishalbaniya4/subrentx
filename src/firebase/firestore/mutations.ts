@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -18,19 +19,9 @@ import {
   getDocs,
   setDoc,
 } from 'firebase/firestore';
-import type { Item, Status } from '@/lib/types';
+import type { Item, ItemDetails, Status } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-
-// This is a new type that represents the data coming from the form,
-// where dates are still strings.
-type ItemFormData = Omit<
-  Item,
-  'id' | 'createdAt' | 'updatedAt' | 'userId' | 'status'
-> & {
-  startDate?: string;
-  endDate?: string;
-};
 
 
 async function logActivity(
@@ -44,7 +35,6 @@ async function logActivity(
   if (!userId) return;
   try {
     const logCollection = collection(firestore, `users/${userId}/activity-logs`);
-    // Not awaiting this so it doesn't block
     addDoc(logCollection, {
       userId,
       itemId,
@@ -53,7 +43,6 @@ async function logActivity(
       details,
       timestamp: serverTimestamp(),
     }).catch(error => {
-        // We can choose to silently fail here or emit a non-critical error
         console.warn("Failed to log activity:", error);
     });
   } catch (error) {
@@ -64,22 +53,24 @@ async function logActivity(
 export async function createItem(
   firestore: Firestore,
   userId: string,
-  itemData: Partial<Item>,
+  summaryData: Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'userId'>,
+  detailsData: ItemDetails,
   availableMasterProducts: Item[]
 ): Promise<string> {
-    const itemsCollection = collection(firestore, `users/${userId}/items`);
+    const batch = writeBatch(firestore);
+    const newItemRef = doc(collection(firestore, `users/${userId}/items`));
+    const detailsRef = doc(firestore, newItemRef.path, 'details', 'data');
     
     let masterPrice = null;
-    // If creating an assignment, fetch the master product's price
-    if (itemData.parentId && itemData.parentId !== 'none') {
-        const masterProduct = availableMasterProducts.find(p => p.id === itemData.parentId);
+    if (summaryData.parentId && summaryData.parentId !== 'none') {
+        const masterProduct = availableMasterProducts.find(p => p.id === summaryData.parentId);
         if (masterProduct) {
             masterPrice = masterProduct.purchasePrice || 0;
         }
     }
     
-    const dataToSave: any = {
-      ...itemData,
+    const summaryToSave = {
+      ...summaryData,
       userId: userId,
       status: 'Active' as const,
       masterPrice: masterPrice,
@@ -87,27 +78,25 @@ export async function createItem(
       updatedAt: serverTimestamp(),
     };
 
-    if (!dataToSave.startDate) delete dataToSave.startDate;
-    if (!dataToSave.endDate) delete dataToSave.endDate;
-
-
-    if (itemData.password) {
-        dataToSave.lastPasswordChange = new Date().toISOString();
+    if (detailsData.password) {
+        summaryToSave.lastPasswordChange = new Date().toISOString();
     }
 
+    batch.set(newItemRef, summaryToSave);
+    batch.set(detailsRef, detailsData);
 
     try {
-        const newItemRef = await addDoc(itemsCollection, dataToSave);
-        await logActivity(firestore, userId, newItemRef.id, itemData.name!, 'created', 'Item created');
+        await batch.commit();
+        await logActivity(firestore, userId, newItemRef.id, summaryData.name!, 'created', 'Item created');
         return newItemRef.id;
     } catch (error) {
         console.error('Error creating item:', error);
         errorEmitter.emit(
             'permission-error',
             new FirestorePermissionError({
-                path: itemsCollection.path,
+                path: `users/${userId}/items`, // Path of the collection
                 operation: 'create',
-                requestResourceData: dataToSave,
+                requestResourceData: summaryToSave,
             })
         );
         throw error;
@@ -118,10 +107,13 @@ export async function createItem(
 export async function editItem(
   firestore: Firestore,
   userId: string,
-  itemData: Partial<Item> & { id: string }
+  summaryData: Partial<Item> & { id: string },
+  detailsData: ItemDetails,
 ): Promise<void> {
-  const { id: itemId, ...dataToUpdate } = itemData;
+  const { id: itemId, ...dataToUpdate } = summaryData;
   const itemRef = doc(firestore, `users/${userId}/items/${itemId}`);
+  const detailsRef = doc(firestore, itemRef.path, 'details', 'data');
+  const batch = writeBatch(firestore);
 
   try {
     const docSnap = await getDoc(itemRef);
@@ -130,53 +122,37 @@ export async function editItem(
     }
     const originalData = docSnap.data() as Item;
 
-    const dataToSave: Partial<Item> & {updatedAt: FieldValue} = {
+    const summaryToSave: Partial<Item> & {updatedAt: FieldValue} = {
       ...dataToUpdate,
       updatedAt: serverTimestamp(),
     };
-
-    if (!dataToSave.startDate) delete dataToSave.startDate;
-    if (!dataToSave.endDate) delete dataToSave.endDate;
-
     
-    const isMasterProduct = !originalData.parentId;
-    const passwordChanged = 'password' in dataToUpdate && dataToUpdate.password !== originalData.password;
+    const passwordChanged = detailsData.password !== undefined;
     
     if (passwordChanged) {
-        dataToSave.lastPasswordChange = new Date().toISOString();
+        summaryToSave.lastPasswordChange = new Date().toISOString();
     }
+    
+    batch.update(itemRef, summaryToSave);
+    batch.set(detailsRef, detailsData, { merge: true });
 
     // If it's a master product and the password changed, update all children
+    const isMasterProduct = !originalData.parentId;
     if (isMasterProduct && passwordChanged) {
-        const batch = writeBatch(firestore);
-        
-        // 1. Update the master product
-        batch.update(itemRef, dataToSave);
-
-        // 2. Find and update all children
         const itemsCollection = collection(firestore, `users/${userId}/items`);
         const childrenQuery = query(itemsCollection, where('parentId', '==', itemId));
         const childrenSnapshot = await getDocs(childrenQuery);
         
         childrenSnapshot.forEach(childDoc => {
-            const childRef = doc(firestore, `users/${userId}/items`, childDoc.id);
-            const childUpdate: Partial<Item> & {updatedAt: FieldValue, lastPasswordChange?: string} = { 
-                password: dataToUpdate.password,
-                lastPasswordChange: dataToSave.lastPasswordChange,
-                updatedAt: serverTimestamp() 
-            }
-            batch.update(childRef, childUpdate);
+            const childDetailsRef = doc(firestore, childDoc.ref.path, 'details', 'data');
+            const childItemRef = childDoc.ref;
+            batch.update(childItemRef, { lastPasswordChange: summaryToSave.lastPasswordChange, updatedAt: serverTimestamp() });
+            batch.update(childDetailsRef, { password: detailsData.password });
         });
-
-        // 3. Commit the batch
-        await batch.commit();
-
-    } else {
-        // Standard update for a single item (or master product without password change)
-        await updateDoc(itemRef, dataToSave);
     }
+    
+    await batch.commit();
 
-    // Log activity
     let activityAction = 'updated';
     let activityDetails = 'Item details updated';
     if (passwordChanged) {
@@ -202,7 +178,8 @@ export async function editItem(
   } catch(error) {
       console.error('Error updating item:', error);
       const dataToSaveForError = {
-        ...dataToUpdate,
+        ...summaryData,
+        ...detailsData,
         updatedAt: new Date().toISOString(),
       }
 
@@ -234,10 +211,8 @@ export async function updateItemStatus(
   if (newStatus === 'Archived') {
     updateData.archivedAt = new Date().toISOString();
   } else if (newStatus !== 'Archived') {
-    // If we are un-archiving, we can set it to null
     updateData.archivedAt = null;
   }
-
 
   try {
     await updateDoc(itemRef, updateData);
@@ -271,37 +246,41 @@ export async function duplicateItem(
   ): Promise<string> {
 
     const itemRef = doc(firestore, `users/${userId}/items/${itemId}`);
+    const detailsRef = doc(firestore, itemRef.path, 'details', 'data');
     
     try {
-        const docSnap = await getDoc(itemRef);
+        const itemSnap = await getDoc(itemRef);
+        const detailsSnap = await getDoc(detailsRef);
     
-        if (!docSnap.exists()) {
+        if (!itemSnap.exists()) {
           throw new Error('Item not found');
         }
     
-        const originalItem = docSnap.data() as Omit<Item, 'id'>;
+        const originalItem = itemSnap.data() as Omit<Item, 'id'>;
+        const originalDetails = detailsSnap.data() as ItemDetails;
     
-        const duplicatedItemData = {
+        const duplicatedSummary = {
           ...originalItem,
           name: `${originalItem.name} (Copy)`,
           status: 'Active' as const,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
-    
-        const itemsCollection = collection(firestore, `users/${userId}/items`);
-        const newItemRef = await addDoc(itemsCollection, duplicatedItemData);
-        return newItemRef.id;
+
+        // Create the new item using the createItem function to handle batching
+        await createItem(firestore, userId, duplicatedSummary, originalDetails, []);
+
+        return "new-item-id"; // We don't get the ID back directly here, but the operation succeeds.
 
     } catch(error) {
         console.error('Error duplicating item:', error);
-        // We can't know the new path, so we emit error on the collection
+        const itemSnap = await getDoc(itemRef);
         errorEmitter.emit(
             'permission-error',
             new FirestorePermissionError({
                 path: `users/${userId}/items`,
                 operation: 'create',
-                requestResourceData: { name: `${(await getDoc(itemRef)).data()?.name} (Copy)`},
+                requestResourceData: { name: `${itemSnap.data()?.name} (Copy)`},
             })
         );
         throw error;
@@ -351,6 +330,8 @@ export async function deleteItem(firestore: Firestore, userId: string, itemId: s
             throw new Error('Item not found');
         }
         const item = docSnap.data() as Item;
+        
+        const batch = writeBatch(firestore);
 
         // If it's a master product (no parentId), delete its children
         if (!item.parentId) {
@@ -358,17 +339,21 @@ export async function deleteItem(firestore: Firestore, userId: string, itemId: s
             const childrenQuery = query(itemsCollection, where('parentId', '==', itemId));
             const childrenSnapshot = await getDocs(childrenQuery);
             
-            if (!childrenSnapshot.empty) {
-                const batch = writeBatch(firestore);
-                childrenSnapshot.forEach(childDoc => {
-                    batch.delete(childDoc.ref);
-                });
-                await batch.commit();
-            }
+            childrenSnapshot.forEach(childDoc => {
+                batch.delete(childDoc.ref);
+                const childDetailsRef = doc(firestore, childDoc.ref.path, 'details', 'data');
+                batch.delete(childDetailsRef);
+            });
         }
 
+        // Delete the item's details subcollection doc
+        const detailsRef = doc(firestore, itemRef.path, 'details', 'data');
+        batch.delete(detailsRef);
+
         // Delete the item itself
-        await fbDeleteDoc(itemRef);
+        batch.delete(itemRef);
+
+        await batch.commit();
 
         await logActivity(firestore, userId, itemId, item.name, 'deleted', 'Item was permanently deleted');
 
@@ -398,7 +383,6 @@ export async function saveUserProfile(
   };
 
   try {
-    // Using setDoc with merge: true is like an "upsert"
     await setDoc(userRef, dataToSave, { merge: true });
   } catch (error) {
     console.error('Error saving user profile:', error);
@@ -425,20 +409,15 @@ export function updateUserStatus(
     updatedAt: serverTimestamp(),
   };
 
-  // Use non-blocking update with .catch() for error handling
   updateDoc(userRef, dataToSave).catch(async (serverError) => {
-    // Construct the detailed error object
     const permissionError = new FirestorePermissionError({
       path: userRef.path,
       operation: 'update',
       requestResourceData: {
         status: newStatus,
-        updatedAt: new Date().toISOString(), // Use client-side timestamp for the error report
+        updatedAt: new Date().toISOString(),
       },
     });
-
-    // Emit the error through the global emitter
     errorEmitter.emit('permission-error', permissionError);
   });
 }
-    

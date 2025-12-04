@@ -8,16 +8,20 @@ export type FilterUrgency = 'all' | 'soon-to-expire' | 'expired';
 export type SortByType = 'alphabetical' | 'endDate' | 'createdAt';
 export type ViewMode = 'kanban' | 'grid' | 'list';
 
+// Represents the sensitive data stored in a subcollection
+export interface ItemDetails {
+  password?: string;
+  pin?: string;
+  notes?: string;
+}
 
+// Represents the main summary document for an item
 export interface Item {
   id: string;
   userId: string;
   parentId?: string | null;
   name: string;
   username?: string;
-  password?: string;
-  pin?: string;
-  notes?: string;
   startDate?: string;
   endDate?: string;
   status: Status;
@@ -32,6 +36,10 @@ export interface Item {
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
+
+// Represents the combined object used in forms
+export type ItemWithDetails = Item & ItemDetails;
+
 
 export type ActivityLogAction = 'created' | 'updated' | 'password_changed' | 'archived' | 'unarchived' | 'deleted';
 

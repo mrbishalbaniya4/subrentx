@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useSortable } from '@dnd-kit/sortable';
@@ -34,7 +35,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { ItemForm } from './item-form';
-import type { Item, Category, Status } from '@/lib/types';
+import type { Item, ItemDetails, Category, Status } from '@/lib/types';
 import { useState, useTransition, useMemo, useEffect, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { format, isPast, formatDistanceToNow, differenceInDays } from 'date-fns';
@@ -65,7 +66,7 @@ import {
 import { archiveItem, duplicateItem, updateItemStatus, deleteItem } from '@/firebase/firestore/mutations';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
+import { collection, query, where, limit, getDoc, doc } from 'firebase/firestore';
 
 
 interface KanbanCardProps {
@@ -183,8 +184,18 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     });
   };
 
-  const handleCopyAccountDetails = () => {
-    if (!item.password) return;
+  const handleCopyAccountDetails = async () => {
+    if (!firestore || !user) return;
+
+    // Fetch details on demand
+    const detailsRef = doc(firestore, `users/${user.uid}/items/${item.id}/details/data`);
+    const detailsSnap = await getDoc(detailsRef);
+    const details = detailsSnap.data() as ItemDetails;
+
+    if (!details?.password) {
+        toast({ variant: 'destructive', title: 'No password set for this item.'});
+        return;
+    }
 
     const rentalDuration =
       item.startDate && item.endDate
@@ -198,7 +209,7 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     const accountDetails = `Here are your rental account details for ${rentalDuration} days:\nEmail: ${
       item.username || 'N/A'
     }\nPassword: ${
-      item.password
+      details.password
     }\nExpiry Date: ${expiryDate}\nNote: Please don’t share these credentials with anyone.`;
 
     navigator.clipboard.writeText(accountDetails);
@@ -451,14 +462,10 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                     <p className="truncate text-sm text-muted-foreground">{item.username}</p>
                   )}
 
-                  {item.password && (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type={isPasswordRevealed ? 'text' : 'password'}
-                        readOnly
-                        value={item.password}
-                        className="pointer-events-none w-full flex-1 truncate border-none bg-transparent p-0 text-sm font-mono text-muted-foreground focus:ring-0"
-                      />
+                  <div className="flex items-center gap-2">
+                      <p className="flex-1 truncate text-sm font-mono text-muted-foreground">
+                        ••••••••
+                      </p>
                       <Button
                         type="button"
                         variant="ghost"
@@ -476,8 +483,7 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
                         )}
                         <span className="sr-only">Copy account details</span>
                       </Button>
-                    </div>
-                  )}
+                  </div>
                   
                   <div className="flex flex-wrap items-center gap-2">
                      {item.category && (
