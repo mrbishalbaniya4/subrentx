@@ -25,7 +25,7 @@ export type GeneratePasswordOutput = z.infer<typeof GeneratePasswordOutputSchema
 export async function generatePassword(
   input: GeneratePasswordInput
 ): Promise<GeneratePasswordOutput> {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
   const numbers = '0123456789';
   const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
 
