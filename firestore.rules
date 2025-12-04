@@ -1,3 +1,4 @@
+
 /**
  * Core Philosophy: This ruleset enforces a strict user-ownership model with an
  * approval system, with an exception for a designated admin user. All data is
@@ -9,6 +10,7 @@
  * Data Structure: The data is organized hierarchically. A top-level 'users' collection
  * holds user profile documents which contain a 'status' field ('pending', 'active', 'suspended').
  * All other data ('items', 'activity-logs') is in subcollections under the user's document.
+ * Item documents are split into a summary document and a 'details' subcollection to reduce document size.
  *
  * Key Security Decisions:
  * - Admin Role: An admin user ('mrbishalbaniya4@gmail.com') is granted read/write access
@@ -41,7 +43,8 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isSignedIn() && request.auth.token.email == 'mrbishalbaniya4@gmail.com';
+      // Use the verified email for a more reliable admin check.
+      return isSignedIn() && request.auth.token.email_verified && request.auth.token.email == 'mrbishalbaniya4@gmail.com';
     }
 
     function isOwner(userId) {
@@ -66,13 +69,20 @@ service cloud.firestore {
     }
 
     function isAdminUpdatingProfile() {
-        // Admin can update any profile, including changing the status.
-        // The ID of the document must remain immutable.
-        return isAdmin() && request.resource.data.id == resource.data.id;
+      return isAdmin();
     }
     
     function hasValidItemData(userId) {
-      return request.resource.data.userId == userId;
+      // password, pin, and notes are no longer in the main item document
+      let hasNoSensitiveFields = !('password' in request.resource.data) &&
+                                 !('pin' in request.resource.data) &&
+                                 !('notes' in request.resource.data);
+      return request.resource.data.userId == userId && hasNoSensitiveFields;
+    }
+
+    function hasValidItemDetails() {
+        // Only allow expected fields in details subcollection
+        return request.resource.data.keys().hasOnly(['password', 'pin', 'notes']);
     }
     
     function isItemUserIdImmutable() {
@@ -92,36 +102,27 @@ service cloud.firestore {
     // ----------------------------------------------------------------------
 
     match /users/{userId} {
-      /**
-       * @description Controls access to individual user profile documents.
-       * @allow (get) Any signed-in user can read their own profile. Admin can read any profile.
-       * @allow (list) Only the admin can list users.
-       * @allow (create) A user can create their own profile with 'pending' status. Admin can also create a user.
-       * @allow (update) A user can update their own profile (but not status). Admin can update anything.
-       */
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow create: if isCreatingOwnPendingUser(userId) || isAdmin();
       allow update: if isUpdatingOwnProfile(userId) || isAdminUpdatingProfile();
       allow delete: if false;
 
-      /**
-       * @description Controls access to a user's private vault items.
-       * @allow (read, write) Only the owner of an 'active' account can access their items. Admin can read anyone's.
-       */
       match /items/{itemId} {
-        allow get: if isOwnerAndActive(userId) || isAdmin();
-        allow list: if isOwnerAndActive(userId) || isAdmin();
+        allow get, list: if isOwnerAndActive(userId) || isAdmin();
         allow create: if isOwnerAndActive(userId) && hasValidItemData(userId);
         allow update: if isOwnerAndActive(userId) && isItemUserIdImmutable() && isItemCreationTimestampImmutable();
-        allow delete: if isOwnerAndActive(userId);
+        allow delete: if isOwnerAndActive(userId) || isAdmin();
+
+        // Secure the details subcollection
+        match /details/data {
+          allow get: if isOwnerAndActive(userId) || isAdmin();
+          // Allow create/update only if the user is active and the data is valid
+          allow write: if isOwnerAndActive(userId) && hasValidItemDetails();
+          allow delete: if isOwnerAndActive(userId) || isAdmin();
+        }
       }
 
-      /**
-       * @description Controls access to a user's activity log.
-       * @allow (read, list) Only the owner of an 'active' account can access their logs. Admin can read anyone's.
-       * @allow (create) Logs can only be created for an 'active' user.
-       */
       match /activity-logs/{logId} {
         allow get: if isOwnerAndActive(userId) || isAdmin();
         allow list: if isOwnerAndActive(userId) || isAdmin();
