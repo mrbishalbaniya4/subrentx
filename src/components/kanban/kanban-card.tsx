@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/dialog';
 import { ItemForm } from './item-form';
 import type { Item, Category, Status } from '@/lib/types';
-import { useState, useTransition, useMemo, useEffect } from 'react';
+import { useState, useTransition, useMemo, useEffect, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { format, isPast, formatDistanceToNow, differenceInDays } from 'date-fns';
 import {
@@ -83,7 +83,7 @@ const categoryColors: Record<Category, string> = {
 };
 
 
-export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
+function KanbanCard({ item, isOverlay }: KanbanCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
@@ -602,3 +602,6 @@ export function KanbanCard({ item, isOverlay }: KanbanCardProps) {
     </>
   );
 }
+
+const MemoizedKanbanCard = memo(KanbanCard);
+export { MemoizedKanbanCard as KanbanCard };

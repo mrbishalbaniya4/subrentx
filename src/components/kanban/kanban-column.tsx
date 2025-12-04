@@ -3,9 +3,8 @@
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { KanbanCard } from './kanban-card';
 import type { Item, Status } from '@/lib/types';
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { FixedSizeList as List } from 'react-window';
 
 interface KanbanColumnProps {
@@ -15,7 +14,7 @@ interface KanbanColumnProps {
   isDropDisabled?: boolean;
 }
 
-export function KanbanColumn({ id, title, items, isDropDisabled = false }: KanbanColumnProps) {
+function KanbanColumn({ id, title, items, isDropDisabled = false }: KanbanColumnProps) {
   const itemIds = useMemo(() => items.map(item => item.id), [items]);
 
   const { setNodeRef } = useSortable({
@@ -68,3 +67,6 @@ export function KanbanColumn({ id, title, items, isDropDisabled = false }: Kanba
     </div>
   );
 }
+
+const MemoizedKanbanColumn = memo(KanbanColumn);
+export { MemoizedKanbanColumn as KanbanColumn };

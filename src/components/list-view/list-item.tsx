@@ -2,7 +2,7 @@
 'use client';
 
 import type { Item, Category, Status } from '@/lib/types';
-import { useState, useTransition, useMemo } from 'react';
+import { useState, useTransition, useMemo, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { format, isPast, formatDistanceToNow, differenceInDays } from 'date-fns';
 import {
@@ -77,7 +77,7 @@ const statusColors: Record<string, string> = {
 };
 
 
-export function ListItem({ item }: ListItemProps) {
+function ListItem({ item }: ListItemProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -390,3 +390,6 @@ export function ListItem({ item }: ListItemProps) {
     </>
   );
 }
+
+const MemoizedListItem = memo(ListItem);
+export { MemoizedListItem as ListItem };
