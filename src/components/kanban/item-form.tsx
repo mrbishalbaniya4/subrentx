@@ -191,7 +191,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
         endDate: item.endDate && isValid(new Date(item.endDate)) ? format(new Date(item.endDate), "yyyy-MM-dd'T'HH:mm") : '',
       });
     }
-  }, [item, itemDetails]);
+  }, [item, itemDetails, form]);
 
 
   const parentId = form.watch('parentId');
@@ -210,7 +210,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
         const master = availableMasterProducts.find(p => p.id === parentId);
         if (master) {
             form.setValue('name', master.name);
-            form.setValue('username', master.username);
+            form.setValue('username', master.username || '');
             // Don't auto-fill password from master. That's now in details.
             // form.setValue('password', master.password || ''); 
             form.setValue('category', master.category);
@@ -499,7 +499,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
                     <FormItem>
                       <FormLabel>Username/Email</FormLabel>
                       <FormControl>
-                        <Input placeholder="user@example.com" {...field} />
+                        <Input placeholder="user@example.com" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -517,6 +517,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
                               type={isPasswordVisible ? 'text' : 'password'} 
                               placeholder="••••••••" 
                               {...field}
+                              value={field.value ?? ''}
                               onChange={(e) => {
                                   field.onChange(e);
                                   setPasswordChanged(true);
@@ -579,6 +580,7 @@ export function ItemForm({ item, setDialogOpen, itemType }: ItemFormProps) {
                       <Textarea
                         placeholder={isMasterProductForm ? "Add notes for this master product..." : "Add notes for this assignment..."}
                         {...field}
+                        value={field.value ?? ''}
                       />
                     </FormControl>
                     <FormMessage />
