@@ -85,7 +85,6 @@ const categoryColors: Record<Category, string> = {
 
 
 function KanbanCard({ item, isOverlay }: KanbanCardProps) {
-  const [isFlipped, setIsFlipped] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -345,194 +344,142 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
 
   return (
     <>
-      <div
+      <Card
         ref={setNodeRef}
         style={style}
         className={cn(
-          'group/card touch-none relative perspective-1000',
+          'group/card touch-none',
           isDragging && 'opacity-50 z-50',
           isOverlay && 'shadow-2xl'
         )}
         {...attributes}
       >
-        <div
-            className={cn(
-            'w-full h-full relative transform-style-3d transition-transform duration-500',
-            isFlipped && 'rotate-y-180'
+        <CardHeader className="relative flex-row items-start gap-4 space-y-0 p-4 pb-2">
+          <div className="flex-1 space-y-1">
+            <CardTitle className="text-lg font-headline">{item.name}</CardTitle>
+            {item.contactName && (
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <User className="h-4 w-4" />
+                    <span>{item.contactName}</span>
+                </div>
             )}
-        >
-            {/* Front of the Card */}
-            <Card className="w-full h-full backface-hidden">
-                <CardHeader className="relative flex-row items-start gap-4 space-y-0 p-4 pb-2">
-                  <div className="flex-1 space-y-1">
-                    <CardTitle className="text-lg font-headline">{item.name}</CardTitle>
-                    {item.contactName && (
-                         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <User className="h-4 w-4" />
-                            <span>{item.contactName}</span>
-                        </div>
-                    )}
-                  </div>
-                  <div
-                    {...listeners}
-                    className="cursor-grab p-1 text-muted-foreground transition-opacity hover:opacity-80"
-                  >
-                    <GripVertical className="h-5 w-5" />
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3 p-4 pt-0">
-                  {item.username && (
-                    <p className="truncate text-sm text-muted-foreground">{item.username}</p>
-                  )}
+          </div>
+          <div
+            {...listeners}
+            className="cursor-grab p-1 text-muted-foreground transition-opacity hover:opacity-80"
+          >
+            <GripVertical className="h-5 w-5" />
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3 p-4 pt-0">
+          {item.username && (
+            <p className="truncate text-sm text-muted-foreground">{item.username}</p>
+          )}
 
-                  <div className="flex items-center gap-2">
-                      <p className="flex-1 truncate text-sm font-mono text-muted-foreground">
-                        ••••••••
-                      </p>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="z-10 h-7 w-7 shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCopyAccountDetails();
-                        }}
-                      >
-                        {isCopied ? (
-                          <CopyCheck className="h-4 w-4 text-primary" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                        <span className="sr-only">Copy account details</span>
-                      </Button>
-                  </div>
-                  
-                  <div className="flex flex-wrap items-center gap-2">
-                     {item.category && (
-                        <Badge variant="outline" className={cn(categoryColors[item.category])}>
-                            {item.category}
-                        </Badge>
-                    )}
-                    {getUrgencyBadge()}
-                    {getChildItemStatusBadge}
-                   </div>
-                   
-                   {masterExpirationInfo()}
+          <div className="flex items-center gap-2">
+              <p className="flex-1 truncate text-sm font-mono text-muted-foreground">
+                ••••••••
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="z-10 h-7 w-7 shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCopyAccountDetails();
+                }}
+              >
+                {isCopied ? (
+                  <CopyCheck className="h-4 w-4 text-primary" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+                <span className="sr-only">Copy account details</span>
+              </Button>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-2">
+              {item.category && (
+                <Badge variant="outline" className={cn(categoryColors[item.category])}>
+                    {item.category}
+                </Badge>
+            )}
+            {getUrgencyBadge()}
+            {getChildItemStatusBadge}
+            </div>
+            
+            {masterExpirationInfo()}
 
-                    <div className="flex items-center gap-1.5 pt-2 text-xs text-muted-foreground">
-                      <RefreshCcw className="h-3 w-3" />
-                      <span>Last updated {lastUpdated}</span>
-                    </div>
-                </CardContent>
-                 <CardFooter className="p-2 pt-0">
-                    <Button variant="ghost" size="sm" className="w-full" onClick={() => setIsFlipped(true)}>
-                        <Info className="mr-2 h-4 w-4"/>
-                        Details
-                    </Button>
-                </CardFooter>
-            </Card>
-
-            {/* Back of the Card */}
-            <Card className="absolute top-0 left-0 w-full h-full backface-hidden rotate-y-180 flex flex-col">
-                <CardHeader className="flex-row items-center justify-between space-y-0 p-4 pb-2">
-                    <CardTitle className="text-lg font-headline">Summary</CardTitle>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 rounded-full"
+            <div className="flex items-center gap-1.5 pt-2 text-xs text-muted-foreground">
+              <RefreshCcw className="h-3 w-3" />
+              <span>Last updated {lastUpdated}</span>
+            </div>
+        </CardContent>
+          <CardFooter className="p-2 pt-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="w-full">
+                    <Info className="mr-2 h-4 w-4"/>
+                    Details & Actions
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => setIsDialogOpen(true)}>
+                  <FilePenLine className="mr-2 h-4 w-4" />
+                  <span>Edit</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDuplicate} disabled={isPending}>
+                  <CopyPlus className="mr-2 h-4 w-4" />
+                  <span>Duplicate</span>
+                </DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <ArrowRight className="mr-2 h-4 w-4" />
+                    <span>Move to</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      {(['Active', 'Sold Out', 'Archived'] as Status[]).map((status) => (
+                          <DropdownMenuItem
+                          key={status}
+                          disabled={item.status === status || isPending || status === 'Expired'}
+                          onClick={() => handleStatusChange(status)}
                         >
-                          <MoreVertical className="h-4 w-4" />
-                          <span className="sr-only">More options</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setIsDialogOpen(true)}>
-                          <FilePenLine className="mr-2 h-4 w-4" />
-                          <span>Edit</span>
+                            {status === 'Archived' && item.status === 'Archived' ? (
+                            <>
+                              <ArchiveRestore className="mr-2 h-4 w-4" />
+                              <span>Unarchive</span>
+                            </>
+                          ) : (
+                            status
+                          )}
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleDuplicate} disabled={isPending}>
-                          <CopyPlus className="mr-2 h-4 w-4" />
-                          <span>Duplicate</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSub>
-                          <DropdownMenuSubTrigger>
-                            <ArrowRight className="mr-2 h-4 w-4" />
-                            <span>Move to</span>
-                          </DropdownMenuSubTrigger>
-                          <DropdownMenuPortal>
-                            <DropdownMenuSubContent>
-                              {(['Active', 'Sold Out', 'Archived'] as Status[]).map((status) => (
-                                 <DropdownMenuItem
-                                  key={status}
-                                  disabled={item.status === status || isPending || status === 'Expired'}
-                                  onClick={() => handleStatusChange(status)}
-                                >
-                                   {status === 'Archived' && item.status === 'Archived' ? (
-                                    <>
-                                      <ArchiveRestore className="mr-2 h-4 w-4" />
-                                      <span>Unarchive</span>
-                                    </>
-                                  ) : (
-                                    status
-                                  )}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuSubContent>
-                          </DropdownMenuPortal>
-                        </DropdownMenuSub>
-                        <DropdownMenuSeparator />
-                        {item.status === 'Archived' ? (
-                           <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => setIsDeleteDialogOpen(true)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              <span>Delete Permanently</span>
-                            </DropdownMenuItem>
-                        ) : (
-                           <DropdownMenuItem
-                              onClick={() => setIsArchiveDialogOpen(true)}
-                            >
-                              <Archive className="mr-2 h-4 w-4" />
-                              <span>Archive</span>
-                            </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                </CardHeader>
-                <CardContent className="flex-1 space-y-4 p-4">
-                    <div className="flex justify-around text-center">
-                        <div className="space-y-1">
-                            <p className="text-sm text-muted-foreground">Assignments</p>
-                            <p className="text-3xl font-bold">{assignmentCount}</p>
-                        </div>
-                         {itemType === 'master' && (
-                            <div className="space-y-1">
-                                <p className="text-sm text-muted-foreground">Total Profit</p>
-                                <p className={cn(
-                                    "text-3xl font-bold flex items-center justify-center gap-1",
-                                    totalProfit > 0 && "text-green-600",
-                                    totalProfit < 0 && "text-red-600"
-                                )}>
-                                    <span className="text-2xl">Rs</span>
-                                    {totalProfit.toFixed(2)}
-                                </p>
-                            </div>
-                         )}
-                    </div>
-                </CardContent>
-                <CardFooter className="p-2 pt-0">
-                    <Button variant="ghost" size="sm" className="w-full" onClick={() => setIsFlipped(false)}>
-                        <ArrowRight className="mr-2 h-4 w-4 rotate-180" />
-                        Back
-                    </Button>
-                </CardFooter>
-            </Card>
-        </div>
-      </div>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+                <DropdownMenuSeparator />
+                {item.status === 'Archived' ? (
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      <span>Delete Permanently</span>
+                    </DropdownMenuItem>
+                ) : (
+                    <DropdownMenuItem
+                      onClick={() => setIsArchiveDialogOpen(true)}
+                    >
+                      <Archive className="mr-2 h-4 w-4" />
+                      <span>Archive</span>
+                    </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+        </CardFooter>
+      </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
@@ -600,5 +547,3 @@ function KanbanCard({ item, isOverlay }: KanbanCardProps) {
 
 const MemoizedKanbanCard = memo(KanbanCard);
 export { MemoizedKanbanCard as KanbanCard };
-
-    
